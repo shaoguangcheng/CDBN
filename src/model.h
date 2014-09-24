@@ -3,7 +3,10 @@
 
 #include <blitz/array.h>
 
-#include "base.h"
+#include <vector>
+#include <cstddef>
+
+using namespace std;
 
 #ifdef BZ_NAMESPACES
 using namespace blitz;
@@ -28,8 +31,26 @@ public :
         : W(m.W), biasV(m.biasV), biasH(m.biasH), top(m.top), label(m.label){}
 
     CRBMModel& operator = (const CRBMModel& m){
+        W     = m.W;
+        biasV = m.biasV;
+        biasH = m.biasH;
+        top   = m.top;
+        label = m.label;
 
+        return *this;
     }
+
+    /**
+     * @brief writeToFile write CRBM model to a specified file
+     * @param fileName
+     */
+    void writeToFile(const string& fileName) const;
+
+    /**
+     * @brief loadFromFile load the CRBM model from a specified file
+     * @param filename
+     */
+    void loadFromFile(const string& filename);
 
 public :
     Array<T, DIM+1> W;
@@ -39,4 +60,27 @@ public :
     Array<T, 1> label;
 };
 
+template <class T, int DIM = 2>
+class CDBNModel
+{
+public :
+    CDBN(){}
+
+    inline size_t size() const {
+        return model.size();
+    }
+
+    inline void addCRBM(const CRBM& crbm) {
+        model.push_back(crbm);
+    }
+
+    void writeToFile(const string& fileName) const;
+    void loadFromFile(const string& fileName);
+
+private :
+    /**
+     * @brief model all trained model
+     */
+    vector<CRBMModel> model;
+};
 #endif // MODEL_H

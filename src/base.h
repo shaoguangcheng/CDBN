@@ -72,6 +72,7 @@ public :
     inputLayer& operator = (const inputLayer& l){
         layer::operator =(l);
         type = l.type;
+
         return *this;
     }
 
@@ -103,6 +104,7 @@ public :
         layer::operator =(l);
         nFeatureMap = l.nFeatureMap;
         kernelSize = l.kernelSize;
+
         return *this;
     }
 
@@ -137,6 +139,7 @@ public :
     poolingLayer& operator = (const poolingLayer& l){
         layer::operator =(l);
         scale = l.scale;
+
         return *this;
     }
 
@@ -170,6 +173,7 @@ public :
         decreaseUse();
         base = h.base;
         use  = h.base;
+
         return * this;
     }
 
@@ -222,36 +226,61 @@ private :
 };
 
 /**
- * @brief The net class  the structure of CDBN
+ * @brief The net class  the structure of network
  */
 class net{
 public :
-    net(){}
-    net(const string& configFile) : configFile(configFile){}
+    net();
+    net(const string& configFile);
 
 public :
     typedef vector<handle<layer> > netStructure;
+
     /**
-     * @brief layers save the structure of CDBN
+     * @brief layers save the structure of network
      */
     netStructure layers;
+
+    /**
+     * @brief type the type of network which can be UNSUPERVISED or SUPERVISED
+     */
     netType type;
 
 private :
     /**
-     * @brief parse parse the configuration file to obtain the structure of CDBN
+     * @brief parse parse the configuration file to obtain the structure of network
      */
-    void parse();
+    void parse(const string& configFile);
+};
+
+/**
+ * @brief The option class the miscellanous option for the network
+ */
+class option{
+public :
+    option();
+    option(const string& configFile);
 
 private :
     /**
-     * @brief configFile  the configuration file for CDBN
+     * @brief parse parse the configuration file to obtain the structure of network
      */
-    string configFile;
-};
+    void parse();
 
-class option{
+public :
+    string dataName;
+    string outputPath;
+    string biasMode;
 
+    int NDIM;
+    int nEpoch;
+    int batchSize;
+    int nCD;
+
+    double sparsity;
+    double lambda1;
+    double lambda2;
+    double alpha;
 };
 
 #endif // BASE_H
