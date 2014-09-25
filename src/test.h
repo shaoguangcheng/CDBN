@@ -3,9 +3,14 @@
 
 #include <iostream>
 
+#include <blitz/array.h>
+
 #include "base.h"
+#include "model.h"
 
 using namespace std;
+
+using namespace blitz;
 
 //////////////////// test net ///////////////////
 class testNet
@@ -31,5 +36,8 @@ public :
 private :
     option opt;
 };
+
+/////////////////// test crbm ///////////////////
+void testCRBM();
 
 #endif // TEST_H

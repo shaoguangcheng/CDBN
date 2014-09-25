@@ -6,12 +6,15 @@ CONFIG -= qt
 SOURCES += ../src/main.cpp \
     ../src/base.cpp \
     ../src/test.cpp \
-    ../src/model.cpp
+    ../src/util.cpp \
+    ../src/model.hpp
 
 HEADERS += \
     ../src/base.h \
     ../src/model.h \
-    ../src/test.h
+    ../src/test.h \
+    ../src/util.h \
+    ../src/global.h
 
 INCLUDEPATH += /opt/Blitz++/include
 LIBS += -L/opt/Blitz++/lib/ -lblitz

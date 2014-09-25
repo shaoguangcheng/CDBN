@@ -12,6 +12,8 @@ int main()
     testOption opt("../config/option.cfg");
     opt.print();
 
+    testCRBM();
+
     return 0;
 }
 

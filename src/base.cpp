@@ -33,21 +33,6 @@ void net::parse(const string &configFile)
         exit(EXIT_FAILURE);
     }
 
-    // read network type
-    string typeTmp = cfg.lookup("net.type");
-    if("supervised" == typeTmp){
-        type = SUPERVISED;
-    }
-    else{
-        if("unsupervised" == typeTmp){
-            type = UNSUPERVISED;
-        }
-        else{
-            DEBUGMSG("undefined network type");
-            exit(EXIT_FAILURE);
-        }
-    }
-
     const Setting& root = cfg.getRoot();
 
     // read the net structure
@@ -203,11 +188,6 @@ ostream& operator << (ostream& out, const net& n)
 
     out << "================= network structure =============" << endl;
     out << "=========== " << n.size() << " layer " << "=======" << endl;
-    out << "network type : ";
-    if(UNSUPERVISED == n.type)
-        out << "unsupervised" << endl;
-    if(SUPERVISED == n.type)
-        out << "supervised" << endl;
 
     for(size_t i=0; i<n.size(); ++i){
         nameTmp = ns[i]->name;

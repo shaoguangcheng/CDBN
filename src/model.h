@@ -2,9 +2,13 @@
 #define MODEL_H
 
 #include <blitz/array.h>
+//#include <blitz/vector-et.h>
 
 #include <vector>
 #include <cstddef>
+#include <fstream>
+
+#include "global.h"
 
 using namespace std;
 
@@ -12,9 +16,16 @@ using namespace std;
 using namespace blitz;
 #endif
 
+template <class T, int DIM> class CRBMModel;
+
+template <class T, int DIM>
+ostream& operator << (ostream& out, const CRBMModel<T, DIM>& crbm);
+template <class T, int DIM>
+istream& operator >> (istream& in, CRBMModel<T, DIM>& crbm);
+
 /**
  * @brief CRBMModel define the structure of CRBM model which manages the weight, the bias of visible layer,
- *          the bias of hidden layer, the output of CRBM and the label(if the model is supervised)
+ *          the bias of hidden layer, the output of CRBM and the label (if the model is supervised)
  */
 template <class T, int DIM>
 class CRBMModel{
@@ -23,19 +34,17 @@ public :
     CRBMModel(const Array<T, DIM+1>& W,
               const Array<T, 1>& biasV,
               const Array<T, 1>& biasH,
-              const Array<T, DIM+1>& top,
-              const Array<T, 1>& label = -1)
-        : W(W), biasV(biasV), biasH(biasH), top(top), label(label){}
+              const Array<T, DIM+1>& top)
+        : W(W), biasV(biasV), biasH(biasH), top(top){}
 
     CRBMModel(const CRBMModel& m)
-        : W(m.W), biasV(m.biasV), biasH(m.biasH), top(m.top), label(m.label){}
+        : W(m.W), biasV(m.biasV), biasH(m.biasH), top(m.top){}
 
     CRBMModel& operator = (const CRBMModel& m){
         W     = m.W;
         biasV = m.biasV;
         biasH = m.biasH;
         top   = m.top;
-        label = m.label;
 
         return *this;
     }
@@ -52,12 +61,14 @@ public :
      */
     void loadFromFile(const string& filename);
 
+    friend ostream& operator << <T, DIM>(ostream& out, const CRBMModel<T, DIM>& crbm);
+    friend istream& operator >> <T, DIM>(istream& in,  CRBMModel<T, DIM>& crbm);
+
 public :
     Array<T, DIM+1> W;
     Array<T, 1> biasV;
     Array<T, 1> biasH;
     Array<T, DIM+1> top;
-    Array<T, 1> label;
 };
 
 template <class T, int DIM>
@@ -81,9 +92,9 @@ private :
     /**
      * @brief model all trained model
      */
-    vector<CRBMModel<T, DIM> > model;
+    std::vector<CRBMModel<T, DIM> > model;
 };
 
-//#include "model.hpp"
+#include "model.hpp" // Which way decides your compiler
 
 #endif // MODEL_H

@@ -11,14 +11,9 @@
 #include <cstddef>
 #include <stdexcept>
 
-using namespace std;
+#include "global.h"
 
-#ifndef DEBUGMSG
-#define DEBUGMSG(msg) cout << "line: " << __LINE__ \
-    /*<< ", function: " << __func__ */<< \
-    ", file: " << __FILE__ \
-    << ", message: " << msg << endl
-#endif
+using namespace std;
 
 /**
  * @brief The layerType enum define the input layer type
@@ -242,11 +237,6 @@ public :
      * @brief layers save the structure of network
      */
     netStructure layers;
-
-    /**
-     * @brief type the type of network which can be UNSUPERVISED or SUPERVISED
-     */
-    netType type;
 
 private :
     /**
