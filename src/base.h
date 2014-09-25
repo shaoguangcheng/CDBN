@@ -172,7 +172,7 @@ public :
         ++*h.use;
         decreaseUse();
         base = h.base;
-        use  = h.base;
+        use  = h.use;
 
         return * this;
     }
@@ -265,7 +265,7 @@ private :
     /**
      * @brief parse parse the configuration file to obtain the structure of network
      */
-    void parse();
+    void parse(const string &configFile);
 
 public :
     string dataName;
@@ -282,5 +282,8 @@ public :
     double lambda2;
     double alpha;
 };
+
+ostream& operator << (ostream& out, const net& n);
+ostream& operator << (ostream& out, const option& n);
 
 #endif // BASE_H

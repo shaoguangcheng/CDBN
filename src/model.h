@@ -16,14 +16,14 @@ using namespace blitz;
  * @brief CRBMModel define the structure of CRBM model which manages the weight, the bias of visible layer,
  *          the bias of hidden layer, the output of CRBM and the label(if the model is supervised)
  */
-template <class T, int DIM = 2>
+template <class T, int DIM>
 class CRBMModel{
 public :
     CRBMModel(){}
     CRBMModel(const Array<T, DIM+1>& W,
               const Array<T, 1>& biasV,
               const Array<T, 1>& biasH,
-              const Array<T, Dim+1>& top,
+              const Array<T, DIM+1>& top,
               const Array<T, 1>& label = -1)
         : W(W), biasV(biasV), biasH(biasH), top(top), label(label){}
 
@@ -60,17 +60,17 @@ public :
     Array<T, 1> label;
 };
 
-template <class T, int DIM = 2>
+template <class T, int DIM>
 class CDBNModel
 {
 public :
-    CDBN(){}
+    CDBNModel(){}
 
     inline size_t size() const {
         return model.size();
     }
 
-    inline void addCRBM(const CRBM& crbm) {
+    inline void addCRBM(const CRBMModel<T, DIM>& crbm) {
         model.push_back(crbm);
     }
 
@@ -81,6 +81,9 @@ private :
     /**
      * @brief model all trained model
      */
-    vector<CRBMModel> model;
+    vector<CRBMModel<T, DIM> > model;
 };
+
+//#include "model.hpp"
+
 #endif // MODEL_H

@@ -5,8 +5,8 @@ CONFIG -= qt
 
 SOURCES += ../src/main.cpp \
     ../src/base.cpp \
-    ../src/model.cpp \
-    ../src/test.cpp
+    ../src/test.cpp \
+    ../src/model.cpp
 
 HEADERS += \
     ../src/base.h \
@@ -14,9 +14,9 @@ HEADERS += \
     ../src/test.h
 
 INCLUDEPATH += /opt/Blitz++/include
-LIBS += -L/opt/Blitz++/lib -lblitz
+LIBS += -L/opt/Blitz++/lib/ -lblitz
 
 INCLUDEPATH += /opt/libconfig/include
-LIBS += -L//opt/libconfig/lib -lconfig++
+LIBS += -L/opt/libconfig/lib -lconfig++
 
 OBJECTS_DIR = ./tmp

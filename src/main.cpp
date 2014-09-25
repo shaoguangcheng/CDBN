@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "base.h"
+#include "model.h"
 
 using namespace std;
 
