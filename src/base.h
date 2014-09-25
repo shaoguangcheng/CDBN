@@ -233,6 +233,8 @@ public :
     net();
     net(const string& configFile);
 
+    inline size_t size() const {return layers.size();}
+
 public :
     typedef vector<handle<layer> > netStructure;
 
@@ -283,6 +285,9 @@ public :
     double alpha;
 };
 
+ostream& operator << (ostream& out, const inputLayer& l);
+ostream& operator << (ostream& out, const convLayer& l);
+ostream& operator << (ostream& out, const poolingLayer& l);
 ostream& operator << (ostream& out, const net& n);
 ostream& operator << (ostream& out, const option& n);
 

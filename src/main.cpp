@@ -1,15 +1,17 @@
 #include <iostream>
 
-#include "base.h"
-#include "model.h"
+#include "test.h"
 
 using namespace std;
 
 int main()
 {
-    cout << "Hello World!" << endl;
+    testNet tn("../config/net.cfg");
+    tn.print();
 
-    net::netStructure z;
+    testOption opt("../config/option.cfg");
+    opt.print();
+
     return 0;
 }
 
