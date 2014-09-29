@@ -2,7 +2,7 @@
 #define MODEL_H
 
 #include <blitz/array.h>
-//#include <blitz/vector-et.h>
+#include <blitz/array.h>
 
 #include <vector>
 #include <cstddef>
@@ -33,8 +33,12 @@ public :
     CRBMModel(){}
     CRBMModel(const Array<T, DIM+1>& W,
               const Array<T, 1>& biasV,
+              const Array<T, 1>& biasH)
+        : W(W), biasV(biasV), biasH(biasH){}
+    CRBMModel(const Array<T, DIM+1>& W,
+              const Array<T, 1>& biasV,
               const Array<T, 1>& biasH,
-              const Array<T, DIM+1>& top)
+              const std::vector<Array<T, DIM+1> >& top)
         : W(W), biasV(biasV), biasH(biasH), top(top){}
 
     CRBMModel(const CRBMModel& m)
@@ -68,7 +72,7 @@ public :
     Array<T, DIM+1> W;
     Array<T, 1> biasV;
     Array<T, 1> biasH;
-    Array<T, DIM+1> top;
+    std::vector<Array<T, DIM+1> > top;
 };
 
 template <class T, int DIM>
@@ -85,6 +89,17 @@ public :
         model.push_back(crbm);
     }
 
+    /**
+     * @brief feedForward feed forward the input data according to model parameters
+     * @param data
+     */
+    void feedForward(const Array<T, DIM+1>& data);
+
+    /**
+     * @brief getRepresentation get the feature representation
+     */
+    Array<T, DIM>& getRepresentation() const;
+
     void writeToFile(const string& fileName) const;
     void loadFromFile(const string& fileName);
 
@@ -95,6 +110,6 @@ private :
     std::vector<CRBMModel<T, DIM> > model;
 };
 
-#include "model.hpp" // Which way decides your compiler
+#include "model.hpp" // using which way decides your compiler
 
 #endif // MODEL_H

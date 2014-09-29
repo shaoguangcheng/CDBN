@@ -7,14 +7,16 @@ SOURCES += ../src/main.cpp \
     ../src/base.cpp \
     ../src/test.cpp \
     ../src/util.cpp \
-    ../src/model.hpp
+    ../src/model.hpp \
+    ../src/CRBM.hpp
 
 HEADERS += \
     ../src/base.h \
     ../src/model.h \
     ../src/test.h \
     ../src/util.h \
-    ../src/global.h
+    ../src/global.h \
+    ../src/CRBM.h
 
 INCLUDEPATH += /opt/Blitz++/include
 LIBS += -L/opt/Blitz++/lib/ -lblitz

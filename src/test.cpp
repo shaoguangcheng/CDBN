@@ -23,7 +23,7 @@ void testOption::print() const
 }
 
 ////////////////// test CRBM //////////////////
-void testCRBM()
+void testCRBMModel()
 {
     const int DIM = 2;
     Array<double, DIM+1> W(2,2,2);
@@ -36,12 +36,12 @@ void testCRBM()
     biasH = 0.4,0.5,0.6;
     top = 2,3,4,5,6,7,8,9;
 
-    CRBMModel<double, DIM> crbm(W, biasV, biasH, top);
+    CRBMModel<double, DIM> crbm(W, biasV, biasH);
     crbm.writeToFile("../data/crbm");
 
     CRBMModel<double, DIM> _crbm_;
     _crbm_.loadFromFile("../data/crbm");
-    //cout << _crbm_ << endl;
+    // cout << _crbm_ << endl;
 
     CDBNModel<double, DIM> cdbn;
     cdbn.addCRBM(crbm);
@@ -51,4 +51,12 @@ void testCRBM()
     CDBNModel<double, DIM> _cdbn_;
     _cdbn_.loadFromFile("../data/cdbn");
     cout << _cdbn_.size() << endl;
+}
+
+///////////////////////test util /////////////////
+void testAddNumber()
+{
+    Array<double, 2> x(3,3);
+    x = 1,2,3,4,5,6,7,8,9;
+    cout << addNumber(x, 2.0) << endl;
 }

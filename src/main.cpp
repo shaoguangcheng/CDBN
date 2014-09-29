@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "test.h"
+#include "util.h"
 
 using namespace std;
 
@@ -12,7 +13,11 @@ int main()
     testOption opt("../config/option.cfg");
     opt.print();
 
-    testCRBM();
+    testCRBMModel();
+
+    testCRBM crbm;
+
+    testAddNumber();
 
     return 0;
 }

@@ -1,4 +1,4 @@
-//note : here must not include model.h
+//#include "model.h"
 
 ///////////////////// CRBMModel /////////////////////////
 template <class T, int DIM>
@@ -13,7 +13,6 @@ void CRBMModel<T, DIM>::writeToFile(const string &fileName) const
     out << W << endl;
     out << biasV << endl;
     out << biasH << endl;
-    out << top << endl;
 
     out.close();
 }
@@ -30,7 +29,6 @@ void CRBMModel<T, DIM>::loadFromFile(const string &filename)
     in >> W;
     in >> biasV;
     in >> biasH;
-    in >> top;
 
     in.close();
 }
@@ -41,7 +39,6 @@ ostream& operator << (ostream& out, const CRBMModel<T, DIM>& crbm)
     out << crbm.W << endl;
     out << crbm.biasV << endl;
     out << crbm.biasH << endl;
-    out << crbm.top << endl;
 
     return out;
 }
@@ -52,12 +49,23 @@ istream& operator >> (istream& in, CRBMModel<T, DIM>& crbm)
     in >> crbm.W;
     in >> crbm.biasV;
     in >> crbm.biasH;
-    in >> crbm.top;
 
     return in;
 }
 
 ///////////////////// CDBNModel //////////////////////////
+template <class T, int DIM>
+void CDBNModel<T, DIM>::feedForward(const Array<T, DIM+1>& data)
+{
+    // need to complete
+}
+
+template <class T, int DIM>
+Array<T, DIM>& CDBNModel<T, DIM>::getRepresentation() const
+{
+    // need to complete
+}
+
 template <class T, int DIM>
 void CDBNModel<T, DIM>::writeToFile(const string& fileName) const
 {

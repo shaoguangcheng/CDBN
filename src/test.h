@@ -7,9 +7,10 @@
 
 #include "base.h"
 #include "model.h"
+#include "CRBM.h"
+#include "util.h"
 
 using namespace std;
-
 using namespace blitz;
 
 //////////////////// test net ///////////////////
@@ -37,7 +38,20 @@ private :
     option opt;
 };
 
-/////////////////// test crbm ///////////////////
-void testCRBM();
+/////////////////// test crbmModel ///////////////////
+void testCRBMModel();
+
+/////////////////// test CRBM ///////////////////////
+class testCRBM
+{
+public :
+    testCRBM(){}
+
+private :
+    CRBM<double, 2> crbm;
+};
+
+////////////////////// test util////////////////////
+void testAddNumber();
 
 #endif // TEST_H

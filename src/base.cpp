@@ -76,6 +76,7 @@ void net::parse(const string &configFile)
                 conv.name = nameTmp;
                 singleLayer.lookupValue("nFeatureMap", conv.nFeatureMap);
                 singleLayer.lookupValue("kernelSize", conv.kernelSize);
+                singleLayer.lookupValue("stride", conv.stride);
 
                 layers.push_back(handle<layer>(conv.clone()));
 
@@ -87,6 +88,28 @@ void net::parse(const string &configFile)
 
                 pooling.name = nameTmp;
                 singleLayer.lookupValue("scale", pooling.scale);
+
+                // parse the pooling type
+                string typeTmp;
+                singleLayer.lookupValue("type", typeTmp);
+                if("max" == typeTmp){
+                    pooling.type = MAX;
+                }
+                else{
+                    if("mean" == typeTmp){
+                        pooling.type = MEAN;
+                    }
+                    else{
+                        if("stochastic" == typeTmp){
+                            pooling.type = STOCHASTIC;
+                        }
+                        else{
+                            DEBUGMSG("undefined pooling type");
+                            exit(EXIT_FAILURE);
+                        }
+                    }
+                }
+
 
                 layers.push_back(handle<layer>(pooling.clone()));
 
@@ -168,7 +191,8 @@ ostream& operator << (ostream& out, const convLayer& l)
 {
     out << "name : " << l.name
         << ", nFeatureMap : " << l.nFeatureMap
-        << ", kernelSize  : " << l.kernelSize;
+        << ", kernelSize : " << l.kernelSize
+        << ", stride : " << l.stride;
 
     return out;
 }
@@ -176,7 +200,14 @@ ostream& operator << (ostream& out, const convLayer& l)
 ostream& operator << (ostream& out, const poolingLayer& l)
 {
     out << "name : " << l.name
-        << ", scale : " << l.scale;
+        << ", scale : " << l.scale
+        << ", type : ";
+    if(MAX == l.type)
+        out << "max";
+    if(MEAN == l.type)
+        out << "mean";
+    if(STOCHASTIC == l.type)
+        out << "stochastic";
 
     return out;
 }
@@ -221,6 +252,7 @@ ostream& operator << (ostream& out, const net& n)
 
     return out;
 }
+
 ostream& operator << (ostream& out, const option& n)
 {
     out << "========== network options ==========" << endl;

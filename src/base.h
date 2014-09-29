@@ -9,7 +9,6 @@
 #include <string>
 #include <vector>
 #include <cstddef>
-#include <stdexcept>
 
 #include "global.h"
 
@@ -21,6 +20,15 @@ using namespace std;
 enum layerType{
     GAUSSIAN = 0,
     BERNOULLI
+};
+
+/**
+ * @brief The poolingType enum define the pooling type
+ */
+enum poolingType{
+    MAX = 0,
+    MEAN,
+    STOCHASTIC
 };
 
 /**
@@ -56,7 +64,7 @@ public :
 };
 
 /**
- * @brief The inputLayer class  derived input layer class
+ * @brief The inputLayer class  derived from input layer class
  */
 class inputLayer : public layer
 {
@@ -91,14 +99,16 @@ class convLayer : public layer
 {
 public :
     convLayer() : layer(){}
-    convLayer(const string& name, int nFeatureMap, int kernelSize) :
-        layer(name), nFeatureMap(nFeatureMap), kernelSize(kernelSize){}
+    convLayer(const string& name, int nFeatureMap, int kernelSize, int stride)
+        : layer(name), nFeatureMap(nFeatureMap), kernelSize(kernelSize), stride(stride){}
 
-    convLayer(const convLayer& l) : layer(l), nFeatureMap(l.nFeatureMap), kernelSize(l.kernelSize){}
+    convLayer(const convLayer& l)
+        : layer(l), nFeatureMap(l.nFeatureMap), kernelSize(l.kernelSize), stride(l.stride){}
     convLayer& operator = (const convLayer& l){
         layer::operator =(l);
         nFeatureMap = l.nFeatureMap;
         kernelSize = l.kernelSize;
+        stride = l.stride;
 
         return *this;
     }
@@ -120,6 +130,11 @@ public :
      * @brief kernelSize the kernel size for convolution operation
      */
     int kernelSize;
+
+    /**
+     * @brief stride sliding length of each step for convolution kernel
+     */
+    int stride;
 };
 
 /**
@@ -129,11 +144,14 @@ class poolingLayer : public layer
 {
 public :
     poolingLayer(){}
-    poolingLayer(const string& name, int scale) : layer(name), scale(scale){}
-    poolingLayer(const poolingLayer& l) : layer(l), scale(l.scale){}
+    poolingLayer(const string& name, int scale, poolingType type)
+        : layer(name), scale(scale), type(type){}
+    poolingLayer(const poolingLayer& l)
+        : layer(l), scale(l.scale), type(l.type){}
     poolingLayer& operator = (const poolingLayer& l){
         layer::operator =(l);
         scale = l.scale;
+        type  = l.type;
 
         return *this;
     }
@@ -149,75 +167,8 @@ public :
      * @brief scale scale size from convolution layer to pooling layer
      */
     int scale;
-};
 
-
-/**
- * define the template class to manage the base class pointer
- */
-template <class T>
-class handle{
-public :
-    handle() : base(NULL), use(new size_t(1)){}
-    handle(T* base) : base(base), use(new size_t(1)){}
-    handle(const handle& h) : base(h.base), use(h.use){
-        ++*use;
-    }
-    handle& operator = (const handle& h){
-        ++*h.use;
-        decreaseUse();
-        base = h.base;
-        use  = h.use;
-
-        return * this;
-    }
-
-    ~handle(){
-        decreaseUse();
-    }
-
-    T*& operator -> (){
-        if(base)
-            return base;
-        else
-            throw logic_error("");
-    }
-
-    const T*& operator -> () const{
-        if(base)
-            return base;
-        else
-            throw logic_error("");
-    }
-
-    T& operator * () {
-        if(base)
-            return *base;
-        else
-            throw logic_error("");
-    }
-
-    const T& operator * () const{
-        if(base)
-            return *base;
-        else
-            throw logic_error("");
-    }
-
-private :
-    void decreaseUse(){
-        if(1 == *use){
-            delete base;
-            delete use;
-            return;
-        }
-
-        --*use;
-    }
-
-private :
-    T* base;
-    size_t* use;
+    poolingType type;
 };
 
 /**
