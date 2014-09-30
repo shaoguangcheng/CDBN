@@ -5,6 +5,7 @@
 
 #include "base.h"
 #include "model.h"
+#include "matrixOperation.h"
 
 template <class T, int DIM>
 class CRBM{

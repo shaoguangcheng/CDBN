@@ -118,7 +118,6 @@ void testMultMatrix()
     cout << "x : " << x << endl;
     cout << "y : " << y << endl;
     cout << multMatrix(x,y) << endl;
-    cout << "here" << endl;
 }
 
 //////////////////////////test convolution /////////////////
@@ -132,7 +131,7 @@ void testConvolution2D()
 
     cout << "x : " << x << endl;
     cout << "y : " << y << endl;
-    cout << convolve(x, y, "valid") << endl;
+    cout << "convolution : " << convolve(x, y, "valid") << endl;
 }
 
 void testConvolution3D()
@@ -145,5 +144,24 @@ void testConvolution3D()
 
     cout << "x : " << x << endl;
     cout << "y : " << y << endl;
-    cout << convolve(x, y, "valid") << endl;
+    cout << "convolution : " << convolve(x, y, "valid") << endl;
+}
+
+////////////////////// test special functions //////////////
+void testSigmod()
+{
+    Array<double, 3> x(2,2,2);
+    x = 1,2,3,4,5,6,7,8;
+
+    cout <<"sigmod : " << sigmod(x) << endl;
+}
+
+void testRandn()
+{
+    Array<double, 2> x(10,1);
+    Array<double, 2> y(1,10);
+    randn(x);
+    cout << x << endl;
+    y = transpose(x) ;
+    cout << y << endl;
 }

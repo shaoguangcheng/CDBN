@@ -5,7 +5,7 @@
  *      and convlution. For some operations, both 2d and 3d
  *      versions are provided. All these functions have been tested.
  *
- * \author Shaoguang Cheng
+ * \author Shaoguang Cheng. From Xi'an, China
  * \data   2014.9.29
  */
 
@@ -15,14 +15,18 @@
 #include <blitz/array.h>
 #include <blitz/funcs.h>
 #include <blitz/vector-et.h>
+#include <random/normal.h>
 
 #include <string.h>
+#include <time.h>
 
 #include "global.h"
 
 #ifdef BZ_NAMESPACES
 using namespace blitz;
 #endif
+
+using namespace ranlib;
 
 #ifndef COMMENT
 #define COMMENT 0
@@ -33,7 +37,7 @@ using namespace blitz;
  *  \param \a x 2d matrix
  */
 template <class T>
-inline Array<T, 2>& transpose(const Array<T, 2>& x)
+Array<T, 2> transpose(Array<T, 2> x)
 {
     return x.transpose(secondDim, firstDim);
 }
@@ -43,7 +47,7 @@ inline Array<T, 2>& transpose(const Array<T, 2>& x)
  *  \param \a x 3d matrix
  */
 template <class T>
-inline Array<T,3>& transpose(const Array<T, 3>& x)
+Array<T,3> transpose(Array<T, 3> x)
 {
     return x.transpose(thirdDim, secondDim, firstDim);
 }
@@ -136,17 +140,51 @@ T multByElement(const Array<T, 2>& x, const Array<T, 2>& y)
 
 /*!
  * \brief multScalar compute c = x*y
+ * \param \a x vector
+ * \param \a y a number
+ */
+template <class T>
+Array<T, 1> multScalar(const Array<T, 1>& x, T y)
+{
+    Array<T, 1> result(x.shape());
+    firstIndex i;
+
+    result = x(i)*y;
+
+    return result;
+}
+
+/*!
+ * \brief multScalar compute c = x*y
  * \param \a x matrix
  * \param \a y a number
  */
 template <class T>
 Array<T, 2> multScalar(const Array<T, 2>& x, T y)
 {
-    Array<T, 2> result;
+    Array<T, 2> result(x.shape());
     firstIndex i;
     secondIndex j;
 
     result = x(i, j)*y;
+
+    return result;
+}
+
+/*!
+ * \brief multScalar compute c = x*y
+ * \param \a x matrix
+ * \param \a y a number
+ */
+template <class T>
+Array<T, 3> multScalar(const Array<T, 3>& x, T y)
+{
+    Array<T, 3> result(x.shape());
+    firstIndex i;
+    secondIndex j;
+    thirdIndex k;
+
+    result = x(i, j, k)*y;
 
     return result;
 }
@@ -200,7 +238,7 @@ Array<T, 2> multMatrix(const Array<T, 2>& x, const Array<T, 2>& y)
 
 ///////////////////// division /////////////////////////
 /*!
- * \brief divideScalar compute c = x/y
+ * \brief divideScalar for 2d operation compute c = x/y
  * \param \a x matrix
  * \param \a y a number
  * \note  \a y must not be zero
@@ -208,11 +246,11 @@ Array<T, 2> multMatrix(const Array<T, 2>& x, const Array<T, 2>& y)
 template <class T>
 Array<T, 2> divideScalar(const Array<T, 2>& x, T y)
 {
-    if(std::abs(double(y)) < 1e-5){
+    if(std::abs(double(y)) < 1e-6){
         DEBUGMSG("Warning : divide by a very little number");
     }
 
-    if(std::abs(double(y)) < 1e-8){
+    if(std::abs(double(y)) < 1e-9){
         DEBUGMSG("Can not divide by zero");
         exit(EXIT_FAILURE);
     }
@@ -227,7 +265,35 @@ Array<T, 2> divideScalar(const Array<T, 2>& x, T y)
 }
 
 /*!
- * \brief divideByScalar compute c = x/y
+ * \brief divideScalar for 3d operation compute c = x/y
+ * \param \a x 3d array
+ * \param \a y a number
+ * \note  \a y must not be zero
+ */
+template <class T>
+Array<T, 3> divideScalar(const Array<T, 3>& x, T y)
+{
+    if(std::abs(double(y)) < 1e-6){
+        DEBUGMSG("Warning : divide by a very little number");
+    }
+
+    if(std::abs(double(y)) < 1e-9){
+        DEBUGMSG("Can not divide by zero");
+        exit(EXIT_FAILURE);
+    }
+
+    firstIndex i;
+    secondIndex j;
+    thirdIndex k;
+    Array<T, 3> result(x.shape());
+
+    result = x(i,j,k)/(double)(y);
+
+    return result;
+}
+
+/*!
+ * \brief divideByScalar for 2d operation compute c = x/y
  * \param \a x matrix
  * \param \a y a number
  * \note  \a y must not be zero
@@ -235,20 +301,55 @@ Array<T, 2> divideScalar(const Array<T, 2>& x, T y)
 template <class T>
 Array<T, 2> divideByScalar(const Array<T, 2>& x, T y)
 {
+    if(blitz::any(blitz::abs(x) <= 1e-6)){
+        DEBUGMSG("Warning : divide by a very little number");
+    }
 
+    if(blitz::any(blitz::abs(x) <= 1e-9)){
+        DEBUGMSG("Can not divide by zero");
+        exit(EXIT_FAILURE);
+    }
 
     firstIndex i;
     secondIndex j;
     Array<T, 2> result(x.shape());
 
-    result = x(i,j)/(double)(y);
+    result = (double)(y)/x(i,j);
+
+    return result;
+}
+
+/*!
+ * \brief divideByScalar for 3d operation compute c = x/y
+ * \param \a x 3d array
+ * \param \a y a number
+ * \note  \a y must not be zero
+ */
+template <class T>
+Array<T, 3> divideByScalar(const Array<T, 3>& x, T y)
+{
+    if(blitz::any(blitz::abs(x) <= 1e-6)){
+        DEBUGMSG("Warning : divide by a very little number");
+    }
+
+    if(blitz::any(blitz::abs(x) <= 1e-9)){
+        DEBUGMSG("Can not divide by zero");
+        exit(EXIT_FAILURE);
+    }
+
+    firstIndex i;
+    secondIndex j;
+    thirdIndex k;
+    Array<T, 3> result(x.shape());
+
+    result = (double)(y)/x(i,j,k);
 
     return result;
 }
 
 ///////////////////// addition /////////////////////////
 /*!
- * \brief addScalar compute compute c = Xij+Y
+ * \brief addScalar for 2d operation compute compute c = Xij+Y
  * \param \a x matrix
  * \param \a y a number
  */
@@ -260,6 +361,24 @@ Array<T, 2> addScalar(const Array<T, 2>& x, T y)
 
     Array<T, 2> result(x.shape());
     result = x(i,j)+y;
+
+    return result;
+}
+
+/*!
+ * \brief addScalar for 3d operation compute compute c = Xij+Y
+ * \param \a x 3d array
+ * \param \a y a number
+ */
+template <class T>
+Array<T, 3> addScalar(const Array<T, 3>& x, T y)
+{
+    firstIndex i;
+    secondIndex j;
+    thirdIndex k;
+
+    Array<T, 3> result(x.shape());
+    result = x(i,j,k)+y;
 
     return result;
 }
@@ -468,14 +587,69 @@ Array<T, 3> convolve(const Array<T, 3>& x, const Array<T, 3>& kernel, char* type
     }
 }
 
-template <class T>
-Array<T, 2> sigmod(const Array<T, 2>& x)
+//////////////////////////// special function /////////////////////////
+/*!
+ * @brief sigmod function f = 1/(1+exp(-x))
+ *        Both for 2d and 3d
+ * @param x input 2d matrix
+ * @return function value
+ */
+template <class T, int DIM>
+Array<T, DIM> sigmod(const Array<T, DIM>& x)
 {
+    Array<T, DIM> result(x.shape());
 
+    result = multScalar(x, (T)(-1));
+    result = blitz::exp(result);
+    result = addScalar(result, T(1));
+    result = divideByScalar(result, (T)(1));
+
+    return result;
 }
 
+/**
+ * @brief randn generator normal distribution for 2d matrix
+ * @param shape the size of 2d matrix
+ * @return
+ */
 template <class T>
-Array<T, 3> sigmod(const Array<T, 3>& x)
+Array<T, 2> randn(Array<T, 2> x)
 {
+    Normal<T> rng(0, 1);
+    rng.seed((unsigned int)time(0));
+
+    TinyVector<int, 2> shape(x.shape());
+    for(int i = 0; i < shape(0); ++i){
+        for(int j = 0; j < shape(1); ++j){
+                x(i,j) = rng.random();
+        }
+    }
+
+    return x;
 }
+
+/**
+ * @brief randn generator normal distribution for 3d array
+ * @param shape the size of 3d array
+ * @return
+ */
+template <class T>
+Array<T, 3> randn(Array<T, 3> x)
+{
+    Normal<T> rng(0, 1);
+    rng.seed((unsigned int)time(0));
+
+    TinyVector<int, 3> shape(x.shape());
+    for(int i = 0; i < shape(0); ++i){
+        for(int j = 0; j < shape(1); ++j){
+            for(int k = 0; k < shape(2); ++k){
+                x(i,j,k) = rng.random();
+            }
+        }
+    }
+
+    return x;
+}
+
+
 #endif // MATRIXOPERATION_H

@@ -49,7 +49,33 @@ void CRBM<T, DIM>::copyData()
 template <class T, int DIM>
 void CRBM<T, DIM>::train()
 {
-    int nVisible = cpyData.size();
+    int nVisible = cpyData.size(); ///< feature map number of visible layer
+
+    TinyVector<int, DIM+1> shape;
+    for(int i = 0; i < DIM;++i)
+        shape(i) = convL.kernelSize;
+    shape(DIM) = convL.nFeatureMap;
+
+    Array<T, DIM+1> W(shape);
+    Array<T, 1> biasV(nVisible);
+    Array<T, 1> biasH(convL.nFeatureMap);
+
+    Array<T, DIM+1> WInc(shape);
+    Array<T, 1> biasVInc(nVisible);
+    Array<T, 1> biasHInc(convL.nFeatureMap);
+
+    /// initialize parameter
+    W = randn(W);
+    biasV = 0;
+    biasH = 1;
+    biasH = multScalar(biasH, -0.1);
+
+    /// initialize the increasment of parameter
+    WInc = 0;
+    biasVInc = 0;
+    biasHInc = 0;
+
+
 }
 
 template <class T, int DIM>

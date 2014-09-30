@@ -62,4 +62,11 @@ void testMultMatrix();
 ////////////////////// test convolution ////////////////
 void testConvolution2D();
 void testConvolution3D();
+
+////////////////////// test special functions /////////////
+void testSigmod();
+void testRandn();
+
+////////////////////// test CRBM ///////////////////////
+
 #endif // TEST_H
