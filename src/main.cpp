@@ -17,7 +17,14 @@ int main()
 
     testCRBM crbm;
 
-    testAddNumber();
+//    testMultByElementSum();
+//    testAddNumber();
+//    testAddVectorByRow();
+//    testAddVectorByCol();
+//    testMultVector();
+//    testMultMatrix();
+//    testConvolution2D();
+    testConvolution3D();
 
     return 0;
 }

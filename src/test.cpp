@@ -54,9 +54,96 @@ void testCRBMModel()
 }
 
 ///////////////////////test util /////////////////
+void testMultByElementSum()
+{
+    Array<double, 2> x(2,2);
+    x = 1,2,3,4;
+    cout << multByElementSum(x, x) << endl;
+}
+
 void testAddNumber()
 {
     Array<double, 2> x(3,3);
     x = 1,2,3,4,5,6,7,8,9;
-    cout << addNumber(x, 2.0) << endl;
+    cout << addScalar(x, 2.0) << endl;
+}
+
+void testAddVectorByRow()
+{
+    Array<double, 2> x(3,3);
+    x = 1,2,3,4,5,6,7,8,9;
+
+    Array<double, 1> y(3);
+    y = 1,2,3;
+
+    cout << "x : " << x << endl;
+    cout << "y : " << y << endl;
+    cout << addVectorByRow(x,y) << endl;
+}
+
+void testAddVectorByCol()
+{
+    Array<double, 2> x(3,3);
+    x = 1,2,3,4,5,6,7,8,9;
+
+    Array<double, 1> y(3);
+    y = 1,2,3;
+
+    cout << "x : " << x << endl;
+    cout << "y : " << y << endl;
+    cout << addVectorByCol(x,y) << endl;
+}
+
+void testMultVector()
+{
+    Array<double, 2> x(2,3);
+    x = 1,2,3,4,5,6;
+
+    Array<double, 1> y(3);
+    y = 1,2,1;
+
+    cout << "x : " << x << endl;
+    cout << "y : " << y << endl;
+    cout << multVector(x,y) << endl;
+}
+
+void testMultMatrix()
+{
+    Array<double, 2> x(2,3);
+    x = 1,2,3,4,5,6;
+
+    Array<double, 2> y(3,2);
+    y = x;
+
+    cout << "x : " << x << endl;
+    cout << "y : " << y << endl;
+    cout << multMatrix(x,y) << endl;
+    cout << "here" << endl;
+}
+
+//////////////////////////test convolution /////////////////
+void testConvolution2D()
+{
+    Array<double, 2> x(3,3);
+    x = 1,2,3,4,5,6,7,8,9;
+
+    Array<double, 2> y(3,3);
+    y = 1,2,1,1,1,1,1,2,1;
+
+    cout << "x : " << x << endl;
+    cout << "y : " << y << endl;
+    cout << convolve(x, y, "valid") << endl;
+}
+
+void testConvolution3D()
+{
+    Array<double, 3> x(2,2,2);
+    x = 1,2,3,4,5,6,7,8;
+
+    Array<double, 3> y(2,2,2);
+    y = 1,2,1,1,1,1,1,2;
+
+    cout << "x : " << x << endl;
+    cout << "y : " << y << endl;
+    cout << convolve(x, y, "valid") << endl;
 }

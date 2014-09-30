@@ -8,7 +8,8 @@ SOURCES += ../src/main.cpp \
     ../src/test.cpp \
     ../src/util.cpp \
     ../src/model.hpp \
-    ../src/CRBM.hpp
+    ../src/CRBM.hpp \
+    ../src/matrixOperation.cpp
 
 HEADERS += \
     ../src/base.h \
@@ -16,7 +17,8 @@ HEADERS += \
     ../src/test.h \
     ../src/util.h \
     ../src/global.h \
-    ../src/CRBM.h
+    ../src/CRBM.h \
+    ../src/matrixOperation.h
 
 INCLUDEPATH += /opt/Blitz++/include
 LIBS += -L/opt/Blitz++/lib/ -lblitz

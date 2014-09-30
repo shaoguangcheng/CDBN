@@ -1,6 +1,9 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+/*! \def DEBUMSG
+ *
+ */
 #ifndef DEBUGMSG
 #define DEBUGMSG(msg) cout << "line: " << __LINE__ \
     /*<< ", function: " << __func__ */<< \
@@ -11,7 +14,7 @@
 #include <stdexcept>
 
 /**
- * define the template class to manage the base class pointer
+ * @brief handle the template class to manage the base class pointer
  */
 template <class T>
 class handle{
