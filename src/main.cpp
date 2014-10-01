@@ -27,11 +27,19 @@ int main()
 //    testConvolution3D();
 //    testSigmod();
 //    testRandn();
-    vector<Array<double,3> > data(3);
+    Array<double,4> data(4,4,5,2);
+    firstIndex i;
+    secondIndex j;
+    thirdIndex k;
+    fourthIndex l;
+
+    data = i+j+k+l;
+
+    int size = data[0].shape().length();
+    cout << data[0].shape()(size-1) << endl;
+
     convLayer convL("convolution", 3, 5, 1);
     poolingLayer poolingL("pooling", 2.0, MAX);
-    for(int i=0;i<data.size();++i)
-        data[i] = 1;
 
     CRBM<double, 2> crbm(data, convL, poolingL, option("../config/option.cfg"));
 

@@ -6,6 +6,7 @@
 #include "base.h"
 #include "model.h"
 #include "matrixOperation.h"
+#include "util.h"
 
 template <class T, int DIM>
 class CRBM{
@@ -18,7 +19,7 @@ class CRBM{
 
 public :
     CRBM(){}
-    CRBM(const std::vector<Array<T, DIM+1> >& data, const convLayer& convL, const poolingLayer& poolingL, const option& opt);
+    CRBM(const Array<T, DIM+2>& data, const convLayer& convL, const poolingLayer& poolingL, const option& opt, bool isInputGaussian = false);
     CRBM(const CRBM<T, DIM>& crbm);
     CRBM& operator = (const CRBM<T, DIM>& crbm);
 
@@ -51,7 +52,7 @@ private :
     /**
      * @brief inference from visible layer to hidden layer
      */
-    void inference();
+    Array<T, DIM+2> inference(const Array<T, DIM+2>& batchData, const Array<T, DIM+1>& W, const Array<T, 1> biasH);
 
     /**
      * @brief reconstruct from hidden layer to visible layer
@@ -70,12 +71,16 @@ private :
     /**
      * @brief data store input data of CRBM
      */
-    vector<Array<T, DIM+1> > data;
-    vector<Array<T, DIM+1> > cpyData;
+    Array<T, DIM+2> data;
 
     // A CRBM unit contains a convolution layer and pooling layer
     convLayer convL;
     poolingLayer poolingL;
+
+    /**
+     * @brief isInputGaussian  is input data from Gaussian distribution
+     */
+    bool isInputGaussian;
 
     /**
      * @brief opt store miscellanous parameters

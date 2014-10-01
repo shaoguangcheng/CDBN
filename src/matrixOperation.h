@@ -587,6 +587,31 @@ Array<T, 3> convolve(const Array<T, 3>& x, const Array<T, 3>& kernel, char* type
     }
 }
 
+/*!
+ * @brief convolve3d do convolution operation for 3d matrix \a x using kernel \a y
+ *       \a type can be \a "valid" or \a "full". if type is "valid", edge does not be processed. Otherwise.
+ * @param \a x 3d matrix
+ * @param \a kernel
+ * @param \a type convolution type
+ * @return
+ */
+template <class T>
+Array<T, 3> convolve(const Array<T, 3>& x, const Array<T, 2>& kernel, char* type)
+{
+}
+
+/*!
+ * @brief convolve3d do convolution operation for 3d matrix \a x using kernel \a y
+ *       \a type can be \a "valid" or \a "full". if type is "valid", edge does not be processed. Otherwise.
+ * @param \a x 3d matrix
+ * @param \a kernel
+ * @param \a type convolution type
+ * @return
+ */
+template <class T>
+Array<T, 4> convolve(const Array<T, 4>& x, const Array<T, 3>& kernel, char* type)
+{}
+
 //////////////////////////// special function /////////////////////////
 /*!
  * @brief sigmod function f = 1/(1+exp(-x))
