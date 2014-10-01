@@ -190,6 +190,25 @@ Array<T, 3> multScalar(const Array<T, 3>& x, T y)
 }
 
 /*!
+ * \brief multScalar compute c = x*y
+ * \param \a x matrix
+ * \param \a y a number
+ */
+template <class T>
+Array<T, 4> multScalar(const Array<T, 4>& x, T y)
+{
+    Array<T, 4> result(x.shape());
+    firstIndex i;
+    secondIndex j;
+    thirdIndex k;
+    fourthIndex l;
+
+    result = x(i, j, k, l)*y;
+
+    return result;
+}
+
+/*!
  * \brief multVector compute c = x*y
  * \param \a x matrix
  * \param \a y a vector
@@ -347,6 +366,36 @@ Array<T, 3> divideByScalar(const Array<T, 3>& x, T y)
     return result;
 }
 
+/*!
+ * \brief divideByScalar for 4d operation compute c = x/y
+ * \param \a x 4d array
+ * \param \a y a number
+ * \note  \a y must not be zero
+ */
+template <class T>
+Array<T, 4> divideByScalar(const Array<T, 4>& x, T y)
+{
+    if(blitz::any(blitz::abs(x) <= 1e-6)){
+        DEBUGMSG("Warning : divide by a very little number");
+    }
+
+    if(blitz::any(blitz::abs(x) <= 1e-9)){
+        DEBUGMSG("Can not divide by zero");
+        exit(EXIT_FAILURE);
+    }
+
+    firstIndex i;
+    secondIndex j;
+    thirdIndex k;
+    fourthIndex l;
+
+    Array<T, 4> result(x.shape());
+
+    result = (double)(y)/x(i,j,k,l);
+
+    return result;
+}
+
 ///////////////////// addition /////////////////////////
 /*!
  * \brief addScalar for 2d operation compute compute c = Xij+Y
@@ -379,6 +428,25 @@ Array<T, 3> addScalar(const Array<T, 3>& x, T y)
 
     Array<T, 3> result(x.shape());
     result = x(i,j,k)+y;
+
+    return result;
+}
+
+/*!
+ * \brief addScalar for 4d operation compute compute c = Xij+Y
+ * \param \a x 4d array
+ * \param \a y a number
+ */
+template <class T>
+Array<T, 4> addScalar(const Array<T, 4>& x, T y)
+{
+    firstIndex i;
+    secondIndex j;
+    thirdIndex k;
+    fourthIndex l;
+
+    Array<T, 4> result(x.shape());
+    result = x(i,j,k,l)+y;
 
     return result;
 }
@@ -536,9 +604,10 @@ Array<T, 3> convolve(const Array<T, 3>& x, const Array<T, 3>& kernel, char* type
                     TinyVector<int, 3> lowerBound(i, j, k),
                             upperBound(i+shapeKernel(first)-1,
                                        j+shapeKernel(second)-1,
-                                       i+shapeKernel(third)-1);
+                                       k+shapeKernel(third)-1);
                     RectDomain<3> subDomain(lowerBound, upperBound);
                     Array<T, 3> tmp = x(subDomain);
+
                     result(i,j,k) = multByElementSum(tmp, kernel);
                 }
             }
@@ -570,7 +639,7 @@ Array<T, 3> convolve(const Array<T, 3>& x, const Array<T, 3>& kernel, char* type
                         TinyVector<int, 3> lowerBound(i, j, k),
                                 upperBound(i+shapeKernel(first)-1,
                                            j+shapeKernel(second)-1,
-                                           i+shapeKernel(third)-1);
+                                           k+shapeKernel(third)-1);
                         RectDomain<3> subDomain(lowerBound, upperBound);
                         Array<T, 3> tmp = x(subDomain);
                         result(i,j,k) = multByElementSum(tmp, kernel);
@@ -588,9 +657,9 @@ Array<T, 3> convolve(const Array<T, 3>& x, const Array<T, 3>& kernel, char* type
 }
 
 /*!
- * @brief convolve3d do convolution operation for 3d matrix \a x using kernel \a y
+ * @brief convolve do convolution operation for a set of 2d matrix \a x using kernel \a y
  *       \a type can be \a "valid" or \a "full". if type is "valid", edge does not be processed. Otherwise.
- * @param \a x 3d matrix
+ * @param \a x a set of 2d matrix
  * @param \a kernel
  * @param \a type convolution type
  * @return
@@ -598,19 +667,142 @@ Array<T, 3> convolve(const Array<T, 3>& x, const Array<T, 3>& kernel, char* type
 template <class T>
 Array<T, 3> convolve(const Array<T, 3>& x, const Array<T, 2>& kernel, char* type)
 {
+    TinyVector<int, 3> shapeX = x.shape();
+    TinyVector<int, 2> shapeKernel = kernel.shape();
+    TinyVector<int, 3> shapeResult;
+
+    Array<T, 3> result;
+
+    int nCase = shapeX(2); /// number of cases
+
+    shapeResult(2) = shapeX(2);
+
+    if(!strcmp(type, "valid")){
+        shapeResult(0) = shapeX(0) - shapeKernel(0) + 1;
+        shapeResult(1) = shapeX(1) - shapeKernel(1) + 1;
+        result.resize(shapeResult);
+    }
+    else{
+        if(!strcmp(type, "full")){
+            shapeResult(0) = shapeX(0) + shapeKernel(0) - 1;
+            shapeResult(1) = shapeX(1) + shapeKernel(1) - 1;
+            result.resize(shapeResult);
+        }
+        else{
+            DEBUGMSG("Undefined convolution type");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    for(int i = 0; i < nCase; ++i){
+        result(Range::all(), Range::all(), i) = convolve(x(Range::all(), Range::all(), i), kernel, type);
+    }
+
+    return result;
 }
 
 /*!
- * @brief convolve3d do convolution operation for 3d matrix \a x using kernel \a y
+ * @brief convolve do convolution operation for a set of 3d array \a x using kernel \a y
  *       \a type can be \a "valid" or \a "full". if type is "valid", edge does not be processed. Otherwise.
- * @param \a x 3d matrix
+ * @param \a x a set of 3d array
  * @param \a kernel
  * @param \a type convolution type
  * @return
  */
 template <class T>
 Array<T, 4> convolve(const Array<T, 4>& x, const Array<T, 3>& kernel, char* type)
-{}
+{
+    TinyVector<int, 4> shapeX = x.shape();
+    TinyVector<int, 3> shapeKernel = kernel.shape();
+    TinyVector<int, 4> shapeResult;
+
+    Array<T, 4> result;
+
+    int nCase = shapeX(3); /// number of cases
+
+    shapeResult(3) = shapeX(3);
+
+    if(!strcmp(type, "valid")){
+        shapeResult(0) = shapeX(0) - shapeKernel(0) + 1;
+        shapeResult(1) = shapeX(1) - shapeKernel(1) + 1;
+        shapeResult(2) = shapeX(2) - shapeKernel(2) + 1;
+        result.resize(shapeResult);
+    }
+    else{
+        if(!strcmp(type, "full")){
+            shapeResult(0) = shapeX(0) + shapeKernel(0) - 1;
+            shapeResult(1) = shapeX(1) + shapeKernel(1) - 1;
+            shapeResult(2) = shapeX(2) + shapeKernel(2) - 1;
+            result.resize(shapeResult);
+        }
+        else{
+            DEBUGMSG("Undefined convolution type");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    for(int i = 0; i < nCase; ++i){
+        result(Range::all(), Range::all(), Range::all(), i) = convolve(x(Range::all(), Range::all(), Range::all(), i), kernel, type);
+    }
+
+    return result;
+}
+
+#if 0
+template <class T, int DIM>
+Array<T, DIM+1> convolve(const Array<T, DIM+1>& x, const Array<T, DIM>& kernel, char* type)
+{
+    TinyVector<int, DIM+1> shapeX = x.shape();
+    TinyVector<int, DIM> shapeKernel = kernel.shape();
+    TinyVector<int, DIM+1> shapeResult;
+
+    Array<T, DIM+1> result;
+
+    int nCase = shapeX(DIM); /// number of cases
+
+    shapeResult(DIM) = shapeX(DIM);
+
+    if(!strcmp(type, "valid")){
+        for(int i = 0; i < DIM; ++i){
+            shapeResult(i) = shapeX(i) - shapeKernel(i) + 1;
+        }
+
+        result.resize(shapeResult);
+    }
+    else{
+        if(!strcmp(type, "full")){
+            for(int i = 0; i < DIM; ++i){
+                shapeResult(i) = shapeX(i) + shapeKernel(i) - 1;
+            }
+
+            result.resize(shapeResult);
+        }
+        else{
+            DEBUGMSG("Undefined convolution type");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    if(2 == DIM){
+        for(int i = 0; i < nCase; ++i){
+            result(Range::all(), Range::all(), i) = convolve(x(Range::all(), Range::all(), i), kernel, type);
+        }
+    }
+    else{
+        if(3 == DIM){
+            for(int i = 0; i < nCase; ++i){
+                result(Range::all(), Range::all(), Range::all(), i) = convolve(x(Range::all(), Range::all(), Range::all(), i), kernel, type);
+            }
+        }
+        else{
+            DEBUGMSG("Undefined operation");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    return result;
+}
+#endif
 
 //////////////////////////// special function /////////////////////////
 /*!
@@ -669,6 +861,31 @@ Array<T, 3> randn(Array<T, 3> x)
         for(int j = 0; j < shape(1); ++j){
             for(int k = 0; k < shape(2); ++k){
                 x(i,j,k) = rng.random();
+            }
+        }
+    }
+
+    return x;
+}
+
+/**
+ * @brief randn generator normal distribution for 4d array
+ * @param shape the size of 4d array
+ * @return
+ */
+template <class T>
+Array<T, 4> randn(Array<T, 4> x)
+{
+    Normal<T> rng(0, 1);
+    rng.seed((unsigned int)time(0));
+
+    TinyVector<int, 4> shape(x.shape());
+    for(int i = 0; i < shape(0); ++i){
+        for(int j = 0; j < shape(1); ++j){
+            for(int k = 0; k < shape(2); ++k){
+                for(int l = 0; l < shape(3); ++l){
+                    x(i,j,k) = rng.random();
+                }
             }
         }
     }

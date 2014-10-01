@@ -38,10 +38,10 @@ int main()
     int size = data[0].shape().length();
     cout << data[0].shape()(size-1) << endl;
 
-    convLayer convL("convolution", 3, 5, 1);
+    convLayer convL("convolution", 3, 2, 1);
     poolingLayer poolingL("pooling", 2.0, MAX);
 
-    CRBM<double, 2> crbm(data, convL, poolingL, option("../config/option.cfg"));
+    CRBM<double, 2> crbm(data, convL, poolingL, option("../config/option.cfg"), GAUSSIAN);
 
     crbm.train();
 

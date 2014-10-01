@@ -19,7 +19,7 @@ class CRBM{
 
 public :
     CRBM(){}
-    CRBM(const Array<T, DIM+2>& data, const convLayer& convL, const poolingLayer& poolingL, const option& opt, bool isInputGaussian = false);
+    CRBM(const Array<T, DIM+2>& data, const convLayer& convL, const poolingLayer& poolingL, const option& opt, layerType inputType);
     CRBM(const CRBM<T, DIM>& crbm);
     CRBM& operator = (const CRBM<T, DIM>& crbm);
 
@@ -80,7 +80,7 @@ private :
     /**
      * @brief isInputGaussian  is input data from Gaussian distribution
      */
-    bool isInputGaussian;
+    layerType inputType;
 
     /**
      * @brief opt store miscellanous parameters

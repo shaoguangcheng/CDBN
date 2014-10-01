@@ -10,14 +10,14 @@ CRBM<T, DIM>::CRBM(const Array<T, DIM+2>&data,
                    const convLayer &convL,
                    const poolingLayer &poolingL,
                    const option &opt,
-                   bool isInputGaussian)
-    : data(data), convL(convL), poolingL(poolingL), opt(opt), isInputGaussian(isInputGaussian)
+                   layerType inputType)
+    : data(data), convL(convL), poolingL(poolingL), opt(opt), inputType(inputType)
 {
 }
 
 template <class T, int DIM>
 CRBM<T, DIM>::CRBM(const CRBM<T, DIM> &crbm)
-    : data(crbm.data), convL(crbm.convL), poolingL(crbm.poolingL), opt(crbm.opt), isInputGaussian(crbm.isInputGaussian)
+    : data(crbm.data), convL(crbm.convL), poolingL(crbm.poolingL), opt(crbm.opt), inputType(crbm.inputType)
 {
 }
 
@@ -28,7 +28,7 @@ CRBM<T, DIM>& CRBM<T, DIM>::operator =(const CRBM<T, DIM>& crbm)
     convL = crbm.convL;
     poolingL = crbm.poolingL;
     opt = crbm.opt;
-    isInputGaussian = crbm.isInputGaussian;
+    inputType = crbm.inputType;
 
     return *this;
 }
@@ -70,12 +70,15 @@ void CRBM<T, DIM>::train()
 
     /// initialize some temple vars
     TinyVector<int, DIM+2> shape;
-    for(int i = 0; i < DIM; ++i){
-        shape(i) = shapeData(i);
-    }
+
+    shape = shapeData;
     shape(DIM)   = batchSize;
     shape(DIM+1) = nVisible;
     Array<T, DIM+2> visActP(shape);
+
+    for(int i = 0; i < DIM; ++i){
+        shape(i) = shapeData(i) - shapeW(i) + 1;
+    }
 
     shape(DIM+1) = convL.nFeatureMap;
     Array<T, DIM+2> hidActP(shape);
@@ -91,10 +94,10 @@ void CRBM<T, DIM>::train()
 
         for(int batch = 0; batch < nBatch; ++batch){
             if(opt.batchSize*(batch+1) > nCase){
+                shape = shapeData;
                 shape(DIM) = nCase - batchSize*batch;
                 shape(DIM+1) = nVisible;
                 visActP.resize(shape);
-
                 if(4 == size){
                     visActP = cpyData(Range::all(), Range::all(), Range(batchSize*batch, toEnd), Range::all());
                     batchSize = visActP.shape()(2);
@@ -109,6 +112,11 @@ void CRBM<T, DIM>::train()
                         exit(EXIT_FAILURE);
                     }
                 }
+
+               shape = hidActP.shape();
+               shape(DIM) = batchSize;
+               hidActP.resize(shape);
+
             }
             else{
                 if(4 == size){
@@ -126,8 +134,8 @@ void CRBM<T, DIM>::train()
                     }
                 }
             }
-            cout << visActP << endl;
- //           hidActP = inference(visActP, W, biasH);
+            hidActP = inference(visActP, W, biasH);
+            DEBUGMSG(hidActP);
         }
 
     }
@@ -136,48 +144,69 @@ void CRBM<T, DIM>::train()
 template <class T, int DIM>
 Array<T, DIM+2> CRBM<T, DIM>::inference(const Array<T, DIM+2>& batchData, const Array<T, DIM+1>& W, const Array<T, 1> biasH)
 {
-    TinyVector<int, DIM+2> shape = batchData.shape();
-    int size = shape.length(), nVisible = shape(size-1), nHidden = convL.nFeatureMap;
+    TinyVector<int, DIM+2> shapeData = batchData.shape(), shapeHidActP;
+    TinyVector<int, DIM+1> shapeW = W.shape();
 
-    shape(DIM+1) = nHidden;
-    Array<T, DIM+2> hidActP(shape);
+    int nVisible = shapeData(shapeData.length()-1), nHidden = convL.nFeatureMap;
 
-    TinyVector<int, DIM+1> tmpShape;
-    for(int i = 0; i < DIM+1; ++i)
-        tmpShape(i) = shape(i);
+    for(int i = 0; i < DIM; ++i){
+        shapeHidActP(i) = shapeData(i) - shapeW(i) + 1;
+    }
 
-    Array<T, DIM+1> tmp(tmpShape);
+    shapeHidActP(DIM) = shapeData(DIM);
+    shapeHidActP(DIM+1) = nHidden;
+
+    Array<T, DIM+2> hidActP(shapeHidActP);
+    hidActP = 0;
+    DEBUGMSG(hidActP.shape());
+    char* type = "valid";
     for(int i = 0; i < nHidden; ++i){
-        tmp = 0;
-        for(int j = 0;j < nVisible; ++j){
-            if(4 == size){ /// for 2d case
-                tmp = tmp + convolve(batchData(Range::all(), Range::all(), Range::all(), j), W(Range::all(), Range::all(), i), "valid");
+        /// for 2d case
+        if(2 == DIM){
+            for(int j = 0; j < nVisible; ++j){
+                /// do convolution
+                hidActP(Range::all(), Range::all(), Range::all(), i) += convolve(batchData(Range::all(), Range::all(), Range::all(), j), W(Range::all(), Range::all(), i), type);
+            }
+
+            /// add bias
+            hidActP(Range::all(), Range::all(), Range::all(), i) = addScalar(hidActP(Range::all(), Range::all(), Range::all(), i), biasH(i));
+
+            if(GAUSSIAN == inputType){
+                // need complete
             }
             else{
-                if(5 == size){ /// for 3d case
-                    tmp  = tmp + convolve(batchData(Range::all(), Range::all(), Range::all(), j), W(Range::all(), Range::all(), Range::all(),i), "valid");
-                }
-                else{
-                    DEBUGMSG("Unsupport operation");
-                    exit(EXIT_FAILURE);
-                }
+                // need complete
             }
-        }
 
-        tmp = addScalar(tmp, biasH(i));
-        if(4 == size){ /// for 2d case
-            hidActP(Range::all(), Range::all(), Range::all(), i) = tmp;
+            // here should be taken carefully, is right to use sigmod here
+            hidActP(Range::all(), Range::all(), Range::all(), i) = sigmod(hidActP(Range::all(), Range::all(), Range::all(), i));
         }
         else{
-            if(5 == size){ /// for 3d case
-                hidActP(Range::all(), Range::all(), Range::all(), Range::all(), i) = tmp;
+            /// for 3d case
+            if(3 == DIM){
+               for(int j = 0; j < nVisible; ++j){
+                   /// do convolution
+                   hidActP(Range::all(), Range::all(), Range::all(), Range::all(), i) += convolve(batchData(Range::all(), Range::all(), Range::all(), Range::all(), j), W(Range::all(), Range::all(), Range::all(), i), type);
+               }
+
+               /// add bias
+               hidActP(Range::all(), Range::all(), Range::all(), Range::all(), i) = addScalar(hidActP(Range::all(), Range::all(), Range::all(), Range::all(), i), biasH(i));
+
+               if(GAUSSIAN == inputType){
+                  // need complete
+               }
+               else{
+                  // need complete
+               }
+
+            // here should be taken carefully, is right to use sigmod here
+               hidActP(Range::all(), Range::all(), Range::all(), Range::all(), i) = sigmod(hidActP(Range::all(), Range::all(), Range::all(), Range::all(), i));
             }
             else{
                 DEBUGMSG("Unsupport operation");
                 exit(EXIT_FAILURE);
             }
         }
-
     }
 
     return hidActP;
