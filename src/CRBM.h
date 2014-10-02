@@ -65,7 +65,7 @@ private :
     void pooling();
 
 private :
-    void copyData();
+    void trimDataForPooling(Array<T, DIM+2>& batchData, int kernelSize, int blockSize);
 
 private :
     /**

@@ -508,7 +508,7 @@ Array<T, 2> addVectorByCol(const Array<T, 2>& x, const Array<T, 1>& y)
  * @return
  */
 template <class T>
-Array<T, 2> convolve(const Array<T, 2>& x, const Array<T, 2>& kernel, char* type)
+Array<T, 2> convolve(const Array<T, 2>& x, const Array<T, 2>& kernel, const char* type)
 {
     TinyVector<int, 2> shapeX = x.shape(), shapeKernel = kernel.shape();
 
@@ -578,7 +578,7 @@ Array<T, 2> convolve(const Array<T, 2>& x, const Array<T, 2>& kernel, char* type
  * @return
  */
 template <class T>
-Array<T, 3> convolve(const Array<T, 3>& x, const Array<T, 3>& kernel, char* type)
+Array<T, 3> convolve(const Array<T, 3>& x, const Array<T, 3>& kernel, const char* type)
 {
     TinyVector<int, 3> shapeX = x.shape(), shapeKernel = kernel.shape();
 
@@ -665,7 +665,7 @@ Array<T, 3> convolve(const Array<T, 3>& x, const Array<T, 3>& kernel, char* type
  * @return
  */
 template <class T>
-Array<T, 3> convolve(const Array<T, 3>& x, const Array<T, 2>& kernel, char* type)
+Array<T, 3> convolve(const Array<T, 3>& x, const Array<T, 2>& kernel, const char* type)
 {
     TinyVector<int, 3> shapeX = x.shape();
     TinyVector<int, 2> shapeKernel = kernel.shape();
@@ -710,7 +710,7 @@ Array<T, 3> convolve(const Array<T, 3>& x, const Array<T, 2>& kernel, char* type
  * @return
  */
 template <class T>
-Array<T, 4> convolve(const Array<T, 4>& x, const Array<T, 3>& kernel, char* type)
+Array<T, 4> convolve(const Array<T, 4>& x, const Array<T, 3>& kernel, const char* type)
 {
     TinyVector<int, 4> shapeX = x.shape();
     TinyVector<int, 3> shapeKernel = kernel.shape();
@@ -892,6 +892,5 @@ Array<T, 4> randn(Array<T, 4> x)
 
     return x;
 }
-
 
 #endif // MATRIXOPERATION_H

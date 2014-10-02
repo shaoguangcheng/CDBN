@@ -27,7 +27,7 @@ int main()
 //    testConvolution3D();
 //    testSigmod();
 //    testRandn();
-    Array<double,4> data(4,4,5,2);
+    Array<double,4> data(4,5,5,2);
     firstIndex i;
     secondIndex j;
     thirdIndex k;
@@ -39,7 +39,7 @@ int main()
     cout << data[0].shape()(size-1) << endl;
 
     convLayer convL("convolution", 3, 2, 1);
-    poolingLayer poolingL("pooling", 2.0, MAX);
+    poolingLayer poolingL("pooling", 3.0, MAX);
 
     CRBM<double, 2> crbm(data, convL, poolingL, option("../config/option.cfg"), GAUSSIAN);
 

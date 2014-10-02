@@ -36,14 +36,17 @@ CRBM<T, DIM>& CRBM<T, DIM>::operator =(const CRBM<T, DIM>& crbm)
 template <class T, int DIM>
 void CRBM<T, DIM>::train()
 {
-    TinyVector<int, DIM+2> shapeData = data.shape(); ///< feature map number of visible layer
-    int size = shapeData.length();
+    trimDataForPooling(data, convL.kernelSize, poolingL.scale);
 
+    TinyVector<int, DIM+2> shapeData = data.shape();
     TinyVector<int, DIM+1> shapeW;
+
     for(int i = 0; i < DIM;++i)
         shapeW(i) = convL.kernelSize;
     shapeW(DIM) = convL.nFeatureMap;
-    int nVisible = shapeData(size-1);
+
+    int size = shapeData.length();
+    int nVisible = shapeData(size-1);  ///< feature map number of visible layer
 
     Array<T, DIM+1> W(shapeW);
     Array<T, 1> biasV(nVisible);
@@ -66,38 +69,52 @@ void CRBM<T, DIM>::train()
 
     int nCase = shapeData(size-2);/// the number of examples in each feature map
     int batchSize = opt.batchSize;
-    int nBatch = ceiling(nCase, batchSize);
+    int nBatch = ceiling(nCase, batchSize); ///< batch number
 
     /// initialize some temple vars
-    TinyVector<int, DIM+2> shape;
+    TinyVector<int, DIM+2> shapeV, shapeH;
+    Array<T, DIM+2> visActP;
+    Array<T, DIM+2> hidActP;
+    Array<T, DIM+2> hidState;
 
-    shape = shapeData;
-    shape(DIM)   = batchSize;
-    shape(DIM+1) = nVisible;
-    Array<T, DIM+2> visActP(shape);
+    shapeV = shapeData;
+    shapeV(DIM)   = batchSize;
+    shapeV(DIM+1) = nVisible;
+    visActP.resize(shapeV);
+    visActP = 0;
 
     for(int i = 0; i < DIM; ++i){
-        shape(i) = shapeData(i) - shapeW(i) + 1;
+        shapeH(i) = shapeData(i) - shapeW(i) + 1;
     }
-
-    shape(DIM+1) = convL.nFeatureMap;
-    Array<T, DIM+2> hidActP(shape);
-    Array<T, DIM+2> hidState(shape);
+    shapeH(DIM) = batchSize;
+    shapeH(DIM+1) = convL.nFeatureMap;
+    hidActP.resize(shapeH);
+    hidState.resize(shapeH);
+    hidActP = 0;
+    hidState = 0;
 
     /// shuffle data
     Array<T, DIM+2> cpyData(shapeData);
+
     cpyData = shuffleData(data);
 
     //calculate parameters
     for(int i = 0; i < opt.nEpoch; ++i){
+        cout << "poch : " << i << endl;
         Array<double, 1> error(opt.nEpoch);
+
+        shapeV(DIM) = opt.batchSize;
+        visActP.resize(shapeV);
+
+        shapeH(DIM) = opt.batchSize;
+        hidActP.resize(shapeH);
+        hidState.resize(shapeH);
 
         for(int batch = 0; batch < nBatch; ++batch){
             if(opt.batchSize*(batch+1) > nCase){
-                shape = shapeData;
-                shape(DIM) = nCase - batchSize*batch;
-                shape(DIM+1) = nVisible;
-                visActP.resize(shape);
+                shapeV(DIM) = nCase - batchSize*batch;
+                visActP.resize(shapeV);
+
                 if(4 == size){
                     visActP = cpyData(Range::all(), Range::all(), Range(batchSize*batch, toEnd), Range::all());
                     batchSize = visActP.shape()(2);
@@ -113,10 +130,9 @@ void CRBM<T, DIM>::train()
                     }
                 }
 
-               shape = hidActP.shape();
-               shape(DIM) = batchSize;
-               hidActP.resize(shape);
-
+               shapeH(DIM) = batchSize;
+               hidActP.resize(shapeH);
+               hidState.resize(shapeH);
             }
             else{
                 if(4 == size){
@@ -134,13 +150,20 @@ void CRBM<T, DIM>::train()
                     }
                 }
             }
+
             hidActP = inference(visActP, W, biasH);
-            DEBUGMSG(hidActP);
         }
 
     }
 }
 
+/**
+ * @brief inference In this step, we compute P(h|v)
+ * @param batchData a batch data
+ * @param W weight to optimize
+ * @param biasH the bias of detection layer for each feature map
+ * @return P(h|v)
+ */
 template <class T, int DIM>
 Array<T, DIM+2> CRBM<T, DIM>::inference(const Array<T, DIM+2>& batchData, const Array<T, DIM+1>& W, const Array<T, 1> biasH)
 {
@@ -152,14 +175,13 @@ Array<T, DIM+2> CRBM<T, DIM>::inference(const Array<T, DIM+2>& batchData, const 
     for(int i = 0; i < DIM; ++i){
         shapeHidActP(i) = shapeData(i) - shapeW(i) + 1;
     }
-
     shapeHidActP(DIM) = shapeData(DIM);
     shapeHidActP(DIM+1) = nHidden;
 
     Array<T, DIM+2> hidActP(shapeHidActP);
     hidActP = 0;
-    DEBUGMSG(hidActP.shape());
-    char* type = "valid";
+
+    const char* type = "valid";
     for(int i = 0; i < nHidden; ++i){
         /// for 2d case
         if(2 == DIM){
@@ -171,6 +193,7 @@ Array<T, DIM+2> CRBM<T, DIM>::inference(const Array<T, DIM+2>& batchData, const 
             /// add bias
             hidActP(Range::all(), Range::all(), Range::all(), i) = addScalar(hidActP(Range::all(), Range::all(), Range::all(), i), biasH(i));
 
+            /// if input data obeys Gaussian Distribution
             if(GAUSSIAN == inputType){
                 // need complete
             }
@@ -223,3 +246,17 @@ void CRBM<T, DIM>::pooling()
 template <class T, int DIM>
 void CRBM<T, DIM>::feedForward()
 {}
+
+template <class T, int DIM>
+void CRBM<T, DIM>::trimDataForPooling(Array<T, DIM+2>& batchData, int kernelSize, int blockSize)
+{
+    TinyVector<int, DIM+2> shape = batchData.shape();
+
+    for(int i = 0; i < DIM; ++i){
+        if((shape[i] - kernelSize + 1)%blockSize != 0){
+            shape[i] = (shape[i] - kernelSize + 1)/blockSize*blockSize + kernelSize - 1;
+        }
+    }
+
+    batchData.resizeAndPreserve(shape);
+}
