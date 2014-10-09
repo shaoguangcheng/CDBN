@@ -62,7 +62,7 @@ private :
     /**
      * @brief pooling do pooling for hidden layer
      */
-    void pooling();
+    void pooling(Array<T, DIM+2>& P, Array<int, DIM+2> &state, Array<T, DIM+2>& outPooling);
 
 private :
     void trimDataForPooling(Array<T, DIM+2>& batchData, int kernelSize, int blockSize);

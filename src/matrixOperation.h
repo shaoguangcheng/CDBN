@@ -6,7 +6,7 @@
  *      versions are provided. All these functions have been tested.
  *
  * \author Shaoguang Cheng. From Xi'an, China
- * \data   2014.9.29
+ * \date   2014.9.29
  */
 
 #ifndef MATRIXOPERATION_H

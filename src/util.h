@@ -1,3 +1,13 @@
+/*!
+ * \file util.h
+ * \breif Some useful functions are implemented,
+ *      including shuffle, pooling and ceiling. For some operations, both 2d and 3d
+ *      versions are provided. All these functions have been tested.
+ *
+ * \author Shaoguang Cheng. From Xi'an, China
+ * \date   2014.10.9
+ */
+
 #ifndef UTIL_H
 #define UTIL_H
 
@@ -119,7 +129,7 @@ void maxPooling(Array<T, 2>& P, Array<int, 2>& state, Array<T, 2>& outPooling, i
             // update the output of pooling layer
             outPooling(p, q) = P(i*scale+indexM, j*scale+indexN);
             ++q;
-            if(q == rowOfOut){
+            if(q == colOfOut){
                 q = 0;
             }
         }
@@ -183,7 +193,7 @@ void maxPooling(Array<T, 3> &P, Array<int, 3> &state, Array<T, 3> &outPooling, i
 
                 outPooling(p,q,r) = P(i*scale+indexM,j*scale+indexN,k*scale+indexL);
                 ++r;
-                if(r == rowOfOut){
+                if(r == depthOfOut){
                     r = 0;
                 }
             }
@@ -193,7 +203,7 @@ void maxPooling(Array<T, 3> &P, Array<int, 3> &state, Array<T, 3> &outPooling, i
             }
         }
         ++p;
-        if(p == depthOfOut){
+        if(p == rowOfOut){
             p = 0;
         }
     }
@@ -207,7 +217,7 @@ void maxPooling(Array<T, 3> &P, Array<int, 3> &state, Array<T, 3> &outPooling, i
  * @param scale size of block to pooling
  */
 template <class T>
-void stochasticPooling(Array<T, 2> P, Array<int, 2>& state, Array<T, 2>& outPooling, int scale)
+void stochasticPooling(Array<T, 2>& P, Array<int, 2>& state, Array<T, 2>& outPooling, int scale)
 {
     if(P.shape()(0) != outPooling.shape()(0)*scale || P.shape()(1) != outPooling.shape()(1)*scale){
         DEBUGMSG("output of pooling operation occurs error");
@@ -241,9 +251,10 @@ void stochasticPooling(Array<T, 2> P, Array<int, 2>& state, Array<T, 2>& outPool
             T sumTmp = T(0);
             for(int m = 0; m < scale; ++m){
                 for(int n = 0; n < scale; ++n){
-//                    P(i*scale+m, j*scale+n) /= sum;
                     sumTmp += P(i*scale+m, j*scale+n)/sum;
                     tmp(k++) = sumTmp;
+
+                    P(i*scale+m, j*scale+n) /= sum; // Note : here must be careful
                 }
             }
 
@@ -333,6 +344,8 @@ void stochasticPooling(Array<T, 3> P, Array<int, 3>& state, Array<T, 3>& outPool
                         for(int l = 0; l < scale; ++l){
                             tmpSum += P(i*scale+m, j*scale+n, k*scale+l)/sum;
                             tmp(s++) = tmpSum;
+
+                            P(i*scale+m, j*scale+n, k*scale+l) /= sum;
                         }
                     }
                 }

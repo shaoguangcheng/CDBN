@@ -62,7 +62,7 @@ void CRBM<T, DIM>::train()
     biasH = 1;
     biasH = multScalar(biasH, -0.1);
 
-    /// initialize the increasment of parameter
+    /// initialize the increasement of parameter
     WInc = 0;
     biasVInc = 0;
     biasHInc = 0;
@@ -72,17 +72,20 @@ void CRBM<T, DIM>::train()
     int nBatch = ceiling(nCase, batchSize); ///< batch number
 
     /// initialize some temple vars
-    TinyVector<int, DIM+2> shapeV, shapeH;
+    TinyVector<int, DIM+2> shapeV, shapeH, shapePooling;
     Array<T, DIM+2> visActP;
     Array<T, DIM+2> hidActP;
-    Array<T, DIM+2> hidState;
+    Array<int, DIM+2> hidState;
+    Array<T, DIM+2> outOfPooling;
 
+    // for visible layer
     shapeV = shapeData;
     shapeV(DIM)   = batchSize;
     shapeV(DIM+1) = nVisible;
     visActP.resize(shapeV);
     visActP = 0;
 
+    // for hidden layer
     for(int i = 0; i < DIM; ++i){
         shapeH(i) = shapeData(i) - shapeW(i) + 1;
     }
@@ -92,6 +95,13 @@ void CRBM<T, DIM>::train()
     hidState.resize(shapeH);
     hidActP = 0;
     hidState = 0;
+
+    // for output of pooling
+    shapePooling = shapeH;
+    for(int i = 0; i < DIM; ++i){
+        shapePooling(i) = shapeH(i)/poolingL.scale;
+    }
+    outOfPooling.resize(shapePooling);
 
     /// shuffle data
     Array<T, DIM+2> cpyData(shapeData);
@@ -117,12 +127,12 @@ void CRBM<T, DIM>::train()
                 shapeV(DIM) = nCase - batchSize*batch;
                 visActP.resize(shapeV);
 
-                if(4 == size){
+                if(2 == DIM){
                     visActP = cpyData(Range::all(), Range::all(), Range(batchSize*batch, toEnd), Range::all());
                     batchSize = visActP.shape()(2);
                 }
                 else{
-                    if(5 == size){
+                    if(3 == DIM){
                         visActP = cpyData(Range::all(), Range::all(), Range::all(), Range(batchSize*batch, toEnd), Range::all());
                         batchSize = visActP.shape()(3);
                     }
@@ -137,12 +147,12 @@ void CRBM<T, DIM>::train()
                hidState.resize(shapeH);
             }
             else{
-                if(4 == size){
+                if(2 == DIM){
                     visActP = cpyData(Range::all(), Range::all(), Range(batchSize*batch, batchSize*(batch+1)), Range::all());
                     batchSize = visActP.shape()(2);
                 }
                 else{
-                    if(5 == size){
+                    if(3 == DIM){
                         visActP = cpyData(Range::all(), Range::all(), Range::all(), Range(batchSize*batch, batchSize*(batch+1)), Range::all());
                         batchSize = visActP.shape()(3);
                     }
@@ -154,6 +164,8 @@ void CRBM<T, DIM>::train()
             }
 
             hidActP = inference(visActP, W, biasH);
+            pooling(hidActP, hidState, outOfPooling); // do pooling
+
         }
 
     }
@@ -242,8 +254,104 @@ void CRBM<T, DIM>::reconstruct()
 {}
 
 template <class T, int DIM>
-void CRBM<T, DIM>::pooling()
-{}
+void CRBM<T, DIM>::pooling(Array<T, DIM+2>& P, Array<int, DIM+2>& state, Array<T, DIM+2>& outPooling)
+{
+    TinyVector<int, DIM+2> shapeP = P.shape();
+    TinyVector<int, DIM+2> shapeState = state.shape();
+    TinyVector<int, DIM+2> shapeOutPooling = outPooling.shape();
+
+#if 0
+    if(shapeP != shapeState){
+        DEBUGMSG("size does not match");
+        exit(EXIT_FAILURE);
+    }
+#endif
+
+    if(DIM == 2){
+        if(MAX == poolingL.type){
+            for(int i = 0; i < shapeP[DIM+1]; ++i){ // for each batch
+                for(int j = 0; j < shapeP[DIM]; ++j){ // for each feature map
+                    Array<T, 2> tmpP(P(Range::all(), Range::all(), j, i));
+                    Array<int, 2> tmpState(state(Range::all(), Range::all(), j, i));
+                    Array<T, 2> tmpOutPooling(outPooling(Range::all(), Range::all(), j, i));
+
+                    maxPooling(tmpP, tmpState, tmpOutPooling, poolingL.scale);
+
+                    P(Range::all(), Range::all(), j, i) = tmpP;
+                    state(Range::all(), Range::all(), j, i) = tmpState;
+                    outPooling(Range::all(), Range::all(), j, i) = tmpOutPooling;
+                }
+            }
+            return;
+        }
+
+        if(MEAN == poolingL.type){
+            DEBUGMSG("This pooling type has not been implemented");
+            exit(EXIT_FAILURE);
+        }
+
+        if(STOCHASTIC == poolingL.type){
+            for(int i = 0; i < shapeP[DIM+1]; ++i){ // for each batch
+                for(int j = 0; j < shapeP[DIM]; ++j){ // for each feature map
+                    Array<T, 2> tmpP(P(Range::all(), Range::all(), j, i));
+                    Array<int, 2> tmpState(state(Range::all(), Range::all(), j, i));
+                    Array<T, 2> tmpOutPooling(outPooling(Range::all(), Range::all(), j, i));
+
+                    stochasticPooling(tmpP, tmpState, tmpOutPooling, poolingL.scale);
+
+                    P(Range::all(), Range::all(), j, i) = tmpP;
+                    state(Range::all(), Range::all(), j, i) = tmpState;
+                    outPooling(Range::all(), Range::all(), j, i) = tmpOutPooling;
+                }
+            }
+            return;
+        }
+    }
+
+    if(DIM == 3){
+        if(MAX == poolingL.type){
+            for(int i = 0; i < shapeP[DIM+1]; ++i){ // for each batch
+                for(int j = 0; j < shapeP[DIM]; ++j){ // for each feature map
+                    Array<T, 3> tmpP(P(Range::all(), Range::all(), Range::all(), j, i));
+                    Array<int, 3> tmpState(state(Range::all(), Range::all(), Range::all(), j, i));
+                    Array<T, 3> tmpOutPooling(outPooling(Range::all(), Range::all(), Range::all(), j, i));
+
+                    maxPooling(tmpP, tmpState, tmpOutPooling, poolingL.scale);
+
+                    P(Range::all(), Range::all(), Range::all(), j, i) = tmpP;
+                    state(Range::all(), Range::all(), Range::all(), j, i) = tmpState;
+                    outPooling(Range::all(), Range::all(), Range::all(), j, i) = tmpOutPooling;
+                }
+            }
+            return;
+        }
+
+        if(MEAN == poolingL.type){
+            DEBUGMSG("This pooling type has not been implemented");
+            exit(EXIT_FAILURE);
+        }
+
+        if(STOCHASTIC == poolingL.type){
+            for(int i = 0; i < shapeP[DIM+1]; ++i){ // for each batch
+                for(int j = 0; j < shapeP[DIM]; ++j){ // for each feature map
+                    Array<T, 3> tmpP(P(Range::all(), Range::all(), Range::all(), j, i));
+                    Array<int, 3> tmpState(state(Range::all(), Range::all(), Range::all(), j, i));
+                    Array<T, 3> tmpOutPooling(outPooling(Range::all(), Range::all(), Range::all(), j, i));
+
+                    stochasticPooling(tmpP, tmpState, tmpOutPooling, poolingL.scale);
+
+                    P(Range::all(), Range::all(), Range::all(), j, i) = tmpP;
+                    state(Range::all(), Range::all(), Range::all(), j, i) = tmpState;
+                    outPooling(Range::all(), Range::all(), Range::all(), j, i) = tmpOutPooling;
+                }
+            }
+            return;
+        }
+    }
+
+    DEBUGMSG("Unsupport pooling type");
+    exit(EXIT_FAILURE);
+}
 
 template <class T, int DIM>
 void CRBM<T, DIM>::feedForward()

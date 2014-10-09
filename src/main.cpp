@@ -27,10 +27,10 @@ int main()
 //    testConvolution3D();
 //    testSigmod();
 //    testRandn();
-    testStochasticPooling();
+//    testStochasticPooling();
 
-#if 0
-    Array<double,4> data(100,100,2,10);
+#if 1
+    Array<double,4> data(10,10,1,1);
     firstIndex i;
     secondIndex j;
     thirdIndex k;
@@ -42,7 +42,7 @@ int main()
     cout << data[0].shape()(size-1) << endl;
 
     convLayer convL("convolution", 3, 2, 1);
-    poolingLayer poolingL("pooling", 3.0, MAX);
+    poolingLayer poolingL("pooling", 3, STOCHASTIC);
 
     CRBM<double, 2> crbm(data, convL, poolingL, option("../config/option.cfg"), GAUSSIAN);
 

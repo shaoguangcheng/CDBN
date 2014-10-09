@@ -34,7 +34,7 @@ enum poolingType{
 /**
  * @brief The netType enum define the type of whole network
  */
-enum netType{
+enum netType{ // unused
     UNSUPERVISED = 0,
     SUPERVISED
 };
