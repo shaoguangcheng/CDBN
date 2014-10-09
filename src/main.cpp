@@ -27,7 +27,10 @@ int main()
 //    testConvolution3D();
 //    testSigmod();
 //    testRandn();
-    Array<double,4> data(4,5,5,2);
+    testStochasticPooling();
+
+#if 0
+    Array<double,4> data(100,100,2,10);
     firstIndex i;
     secondIndex j;
     thirdIndex k;
@@ -44,6 +47,7 @@ int main()
     CRBM<double, 2> crbm(data, convL, poolingL, option("../config/option.cfg"), GAUSSIAN);
 
     crbm.train();
+#endif
 
     return 0;
 }

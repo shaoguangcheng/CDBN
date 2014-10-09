@@ -165,3 +165,21 @@ void testRandn()
     y = transpose(x) ;
     cout << y << endl;
 }
+
+/////////////////////// test util ///////////////////////
+void testStochasticPooling()
+{
+    int scale = 2;
+
+    Array<double, 3> P(6,6,6);
+    Array<int, 3> state(6,6,6);
+    Array<double, 3> outPooling(6/scale,6/scale,6/scale);
+
+    P = randn(P);
+    cout << "P : " << P << endl;
+
+    stochasticPooling(P, state, outPooling, scale);
+
+    cout << "state : " << state << endl;
+    cout << "out pooling : " << outPooling << endl;
+}

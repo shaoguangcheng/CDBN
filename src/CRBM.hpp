@@ -100,7 +100,9 @@ void CRBM<T, DIM>::train()
 
     //calculate parameters
     for(int i = 0; i < opt.nEpoch; ++i){
-        cout << "poch : " << i << endl;
+        //do some promopt
+        cout << "Epoch : " << i << endl;
+
         Array<double, 1> error(opt.nEpoch);
 
         shapeV(DIM) = opt.batchSize;

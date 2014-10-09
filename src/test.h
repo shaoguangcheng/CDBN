@@ -9,6 +9,7 @@
 #include "model.h"
 #include "CRBM.h"
 #include "matrixOperation.h"
+#include "util.h"
 
 using namespace std;
 using namespace blitz;
@@ -51,7 +52,7 @@ private :
     CRBM<double, 2> crbm;
 };
 
-////////////////////// test util ////////////////////
+////////////////////// test matrix operation ////////////////////
 void testMultByElementSum();
 void testAddNumber();
 void testAddVectorByRow();
@@ -66,6 +67,9 @@ void testConvolution3D();
 ////////////////////// test special functions /////////////
 void testSigmod();
 void testRandn();
+
+////////////////////// test util //////////////////////
+void testStochasticPooling();
 
 ////////////////////// test CRBM ///////////////////////
 
