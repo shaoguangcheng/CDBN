@@ -84,11 +84,18 @@ private :
     void computePV(const Array<T, DIM+2>& hidActP, const Array<T, DIM+2>& visActP, Array<T, DIM+1>& PV);
 
     /**
-     * @brief computeP compute P(h=1|v), for bias of hidden update
+     * @brief computeP compute P(h=1|v), for bias of hidden layer updating
      * @param hidActP
      * @param biasHInc result of P(h=1|v)
      */
     void computeP(const Array<T, DIM+2>& hidActP, Array<T, 1>& biasHInc);
+
+    /**
+     * @brief computeV compute V for bias of visible layer updating
+     * @param visActP
+     * @param biasVInc result of V
+     */
+    void computeV(const Array<T, DIM+2>& visActP, Array<T, 1>& biasVInc);
 
 private :
     void trimDataForPooling(Array<T, DIM+2>& batchData, int kernelSize, int blockSize);

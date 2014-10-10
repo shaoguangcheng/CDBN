@@ -55,6 +55,9 @@ void CRBM<T, DIM>::train()
     Array<T, DIM+1> WInc(shapeW);
     Array<T, 1> biasVInc(nVisible);
     Array<T, 1> biasHInc(convL.nFeatureMap);
+    Array<T, DIM+1> WIncTmp(shapeW);
+    Array<T, 1> biasVIncTmp(nVisible);
+    Array<T, 1> biasHIncTmp(convL.nFeatureMap);
 
     /// initialize parameter
     W = randn(W);
@@ -66,6 +69,9 @@ void CRBM<T, DIM>::train()
     WInc = 0;
     biasVInc = 0;
     biasHInc = 0;
+    WIncTmp = 0;
+    biasVIncTmp = 0;
+    biasHIncTmp = 0;
 
     int nCase = shapeData(size-2);/// the number of examples in each feature map
     int batchSize = opt.batchSize;
@@ -77,6 +83,7 @@ void CRBM<T, DIM>::train()
     Array<T, DIM+2> hidActP;
     Array<T, DIM+2> hidState;
     Array<T, DIM+2> outOfPooling;
+    Array<T, DIM+2> hidActPTmp;
 
     // for visible layer
     shapeV = shapeData;
@@ -93,8 +100,10 @@ void CRBM<T, DIM>::train()
     shapeH(DIM+1) = convL.nFeatureMap;
     hidActP.resize(shapeH);
     hidState.resize(shapeH);
+    hidActPTmp.resize(shapeH);
     hidActP = 0;
     hidState = 0;
+    hidActPTmp = 0;
 
     // for output of pooling
     shapePooling = shapeH;
@@ -165,7 +174,24 @@ void CRBM<T, DIM>::train()
 
             hidActP = inference(visActP, W, biasH);
             pooling(hidActP, hidState, outOfPooling); // do pooling
-            computePV(hidActP, visActP, WInc); // compute P(h=1|v)V
+            hidActPTmp = hidActP.copy();
+            computePV(hidActP, visActP, WInc); // compute P(h=1|v)V for W updating
+            computeP(hidActP, biasHInc); // compute P(h=1|v) for bias of hidden layer updating
+            computeV(visActP, biasVInc); // compute V, for bias of visible layer updating
+
+            // negative phase
+            for(int m = 0; m < opt.nCD; ++m){
+                reconstruct(hidState, W, biasV, visActP);
+                hidActP = inference(visActP, W, biasH);
+                pooling(hidActP, hidState, outOfPooling);
+            }
+
+            computePV(hidActP, visActP, WIncTmp);
+            computeP(hidActP, biasHInc);
+            computeV(visActP, biasVInc);
+
+            // update the W, biasV, biasH
+
         }
 
     }
@@ -200,14 +226,14 @@ Array<T, DIM+2> CRBM<T, DIM>::inference(const Array<T, DIM+2>& batchData, const 
         /// for 2d case
         if(2 == DIM){
             for(int j = 0; j < nVisible; ++j){
-                /// do convolution
+                // do convolution
                 hidActP(Range::all(), Range::all(), Range::all(), i) += convolve(batchData(Range::all(), Range::all(), Range::all(), j), W(Range::all(), Range::all(), i), type);
             }
 
-            /// add bias
+            // add bias
             hidActP(Range::all(), Range::all(), Range::all(), i) = addScalar(hidActP(Range::all(), Range::all(), Range::all(), i), biasH(i));
 
-            /// if input data obeys Gaussian Distribution
+            // if input data obeys Gaussian Distribution
             if(GAUSSIAN == inputType){
                 // need complete
             }
@@ -219,21 +245,23 @@ Array<T, DIM+2> CRBM<T, DIM>::inference(const Array<T, DIM+2>& batchData, const 
             hidActP(Range::all(), Range::all(), Range::all(), i) = sigmod(hidActP(Range::all(), Range::all(), Range::all(), i));
         }
         else{
-            /// for 3d case
+            // for 3d case
             if(3 == DIM){
                for(int j = 0; j < nVisible; ++j){
-                   /// do convolution
+                   // do convolution
                    hidActP(Range::all(), Range::all(), Range::all(), Range::all(), i) += convolve(batchData(Range::all(), Range::all(), Range::all(), Range::all(), j), W(Range::all(), Range::all(), Range::all(), i), type);
                }
 
-               /// add bias
+               // add bias
                hidActP(Range::all(), Range::all(), Range::all(), Range::all(), i) = addScalar(hidActP(Range::all(), Range::all(), Range::all(), Range::all(), i), biasH(i));
 
                if(GAUSSIAN == inputType){
                   // need complete
+
                }
                else{
                   // need complete
+
                }
 
             // here should be taken carefully, is right to use sigmod here
@@ -457,8 +485,8 @@ void CRBM<T, DIM>::computePV(const Array<T, DIM+2>& hidActP, const Array<T, DIM+
     exit(EXIT_FAILURE);
 }
 
-template <classT, int DIM>
-void CRBM<T. DIM>::computeP(const Array<T, DIM+2>& hidActP, Array<T, 1>& biasHInc)
+template <class T, int DIM>
+void CRBM<T, DIM>::computeP(const Array<T, DIM+2>& hidActP, Array<T, 1>& biasHInc)
 {
     TinyVector<int, DIM+2> shapeHidActP = hidActP.shape();
 
@@ -469,19 +497,51 @@ void CRBM<T. DIM>::computeP(const Array<T, DIM+2>& hidActP, Array<T, 1>& biasHIn
     if(DIM == 2){
         for(int i = 0; i < nHidden; ++i){
             biasHInc(i) = sum(hidActP(Range::all(), Range::all(), Range::all(), i));
-            int numcases = shapeHidActP[0]*shapeHidActP[1];
+            int numcases = shapeHidActP(0)*shapeHidActP(1);
             biasHInc(i) /= numcases;
         }
-
         return;
     }
 
     if(DIM == 3){
         for(int i = 0; i < nHidden; ++i){
             biasHInc(i) = sum(hidActP(Range::all(), Range::all(), Range::all(), Range::all(), i));
-            int numcases = shapeHidActP[0]*shapeHidActP[1]*shapeHidActP[2];
+            int numcases = shapeHidActP(0)*shapeHidActP(1)*shapeHidActP(2);
             biasHInc(i) /= numcases;
         }
+        return;
+    }
+
+    DEBUGMSG("Unsupport operation");
+    exit(EXIT_FAILURE);
+}
+
+template <class T, int DIM>
+void CRBM<T, DIM>::computeV(const Array<T, DIM+2>& visActP, Array<T, 1>& biasVInc)
+{
+    TinyVector<int, DIM+2> shapeVisActP = visActP.shape();
+
+    int nVisble = biasVInc.size();
+
+    biasVInc = 0;
+
+    if(DIM == 2){
+        for(int i = 0; i < nVisble; ++i){
+            biasVInc(i) = sum(visActP(Range::all(), Range::all(), Range::all(), i));
+            int numcases = shapeVisActP(0)*shapeVisActP(1);
+            biasVInc(i) /= numcases;
+        }
+
+        return;
+    }
+
+    if(DIM == 3){
+        for(int i = 0; i < nVisble; ++i){
+            biasVInc(i) = sum(visActP(Range::all(), Range::all(), Range::all(), Range::all(), i));
+            int numcases = shapeVisActP(0)*shapeVisActP(1)*shapeVisActP(2);
+            biasVInc(i) /= numcases;
+        }
+
         return;
     }
 
