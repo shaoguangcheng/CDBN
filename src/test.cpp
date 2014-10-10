@@ -172,7 +172,7 @@ void testStochasticPooling()
     int scale = 2;
 
     Array<double, 2> P(6,6);
-    Array<int, 2> state(6,6);
+    Array<double, 2> state(6,6);
     Array<double, 2> outPooling(6/scale,6/scale);
 
     P = randn(P);

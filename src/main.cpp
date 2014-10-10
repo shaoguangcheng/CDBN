@@ -30,7 +30,7 @@ int main()
 //    testStochasticPooling();
 
 #if 1
-    Array<double,4> data(10,10,1,1);
+    Array<double,4> data(10,10,3,2);
     firstIndex i;
     secondIndex j;
     thirdIndex k;

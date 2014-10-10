@@ -51,18 +51,44 @@ private :
 
     /**
      * @brief inference from visible layer to hidden layer
+     * @param batchData
+     * @param W
+     * @param biasH
+     * @return
      */
     Array<T, DIM+2> inference(const Array<T, DIM+2>& batchData, const Array<T, DIM+1>& W, const Array<T, 1> biasH);
 
     /**
      * @brief reconstruct from hidden layer to visible layer
+     * @param state
+     * @param W
+     * @param biasV
+     * @param visActP
      */
-    void reconstruct();
+    void reconstruct(const Array<T, DIM+2>& state, const Array<T, DIM+1>& W, const Array<T, 1>& biasV, Array<T, DIM+2>& visActP);
 
     /**
      * @brief pooling do pooling for hidden layer
+     * @param P
+     * @param state
+     * @param outPooling
      */
-    void pooling(Array<T, DIM+2>& P, Array<int, DIM+2> &state, Array<T, DIM+2>& outPooling);
+    void pooling(Array<T, DIM+2>& P, Array<T, DIM+2> &state, Array<T, DIM+2>& outPooling);
+
+    /**
+     * @brief computePV compute P(h=1|v)V
+     * @param hidActP
+     * @param visActP
+     * @param PV the result of  P(h=1|v)V
+     */
+    void computePV(const Array<T, DIM+2>& hidActP, const Array<T, DIM+2>& visActP, Array<T, DIM+1>& PV);
+
+    /**
+     * @brief computeP compute P(h=1|v), for bias of hidden update
+     * @param hidActP
+     * @param biasHInc result of P(h=1|v)
+     */
+    void computeP(const Array<T, DIM+2>& hidActP, Array<T, 1>& biasHInc);
 
 private :
     void trimDataForPooling(Array<T, DIM+2>& batchData, int kernelSize, int blockSize);

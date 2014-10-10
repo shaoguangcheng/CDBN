@@ -75,7 +75,7 @@ void CRBM<T, DIM>::train()
     TinyVector<int, DIM+2> shapeV, shapeH, shapePooling;
     Array<T, DIM+2> visActP;
     Array<T, DIM+2> hidActP;
-    Array<int, DIM+2> hidState;
+    Array<T, DIM+2> hidState;
     Array<T, DIM+2> outOfPooling;
 
     // for visible layer
@@ -165,7 +165,7 @@ void CRBM<T, DIM>::train()
 
             hidActP = inference(visActP, W, biasH);
             pooling(hidActP, hidState, outOfPooling); // do pooling
-
+            computePV(hidActP, visActP, WInc); // compute P(h=1|v)V
         }
 
     }
@@ -250,11 +250,66 @@ Array<T, DIM+2> CRBM<T, DIM>::inference(const Array<T, DIM+2>& batchData, const 
 }
 
 template <class T, int DIM>
-void CRBM<T, DIM>::reconstruct()
-{}
+void CRBM<T, DIM>::reconstruct(const Array<T, DIM+2>& state, const Array<T, DIM+1>& W, const Array<T, 1>& biasV, Array<T, DIM+2>& visActP)
+{
+    TinyVector<T, DIM+2> stateShape = state.shape();
+    TinyVector<T, DIM+1> WShape = W.shape();
+    TinyVector<T, DIM+2> visActPShape = visActP.shape();
+
+    int nVisble = biasV.size(), nHidden = stateShape[DIM+1];
+
+    visActP = 0;
+    const char* type = "full";
+    if(DIM == 2){
+        for(int i = 0; i < nVisble; ++i){
+            for(int j = 0; j < nHidden; ++j){
+                /// do convolution (negative)
+                visActP(Range::all(), Range::all(), Range::all(), i) += convolve(state(Range::all(), Range::all(), Range::all(), j), W(Range::all(), Range::all(), i), type);
+            }
+
+            /// add bias
+            visActP(Range::all(), Range::all(), Range::all(), i) = addScalar(visActP(Range::all(), Range::all(), Range::all(), i), biasV(i));
+
+            if(GAUSSIAN == inputType){
+                // need to complete
+            }
+            else{
+                // apply sigmod
+                visActP(Range::all(), Range::all(), Range::all(), i) = sigmod(visActP(Range::all(), Range::all(), Range::all(), i));
+            }
+        }
+
+        return;
+    }
+
+    if(DIM == 3){
+        for(int i = 0; i < nVisble; ++i){
+            for(int j = 0; j < nHidden; ++j){
+                /// do convolution (ne)
+                visActP(Range::all(), Range::all(), Range::all(), Range::all(), i) += convolve(state(Range::all(), Range::all(), Range::all(), Range::all(), j), W(Range::all(), Range::all(), Range::all(), i), type);
+            }
+
+            /// add bias
+            visActP(Range::all(), Range::all(), Range::all(), Range::all(), i) = addScalar(visActP(Range::all(), Range::all(), Range::all(), Range::all(), i), biasV(i));
+
+            if(GAUSSIAN == inputType){
+                // need to complete
+            }
+            else{
+                // apply sigmod
+                visActP(Range::all(), Range::all(), Range::all(), Range::all(), i) = sigmod(visActP(Range::all(), Range::all(), Range::all(), Range::all(), i));
+            }
+        }
+
+        return;
+    }
+
+    DEBUGMSG("Unsupport operation");
+    exit(EXIT_FAILURE);
+}
 
 template <class T, int DIM>
-void CRBM<T, DIM>::pooling(Array<T, DIM+2>& P, Array<int, DIM+2>& state, Array<T, DIM+2>& outPooling)
+void CRBM<T, DIM>::pooling(Array<T, DIM+2>& P, Array<T, DIM+2>& state, Array<T, DIM+2>& outPooling)
 {
     TinyVector<int, DIM+2> shapeP = P.shape();
     TinyVector<int, DIM+2> shapeState = state.shape();
@@ -272,7 +327,7 @@ void CRBM<T, DIM>::pooling(Array<T, DIM+2>& P, Array<int, DIM+2>& state, Array<T
             for(int i = 0; i < shapeP[DIM+1]; ++i){ // for each batch
                 for(int j = 0; j < shapeP[DIM]; ++j){ // for each feature map
                     Array<T, 2> tmpP(P(Range::all(), Range::all(), j, i));
-                    Array<int, 2> tmpState(state(Range::all(), Range::all(), j, i));
+                    Array<T, 2> tmpState(state(Range::all(), Range::all(), j, i));
                     Array<T, 2> tmpOutPooling(outPooling(Range::all(), Range::all(), j, i));
 
                     maxPooling(tmpP, tmpState, tmpOutPooling, poolingL.scale);
@@ -294,7 +349,7 @@ void CRBM<T, DIM>::pooling(Array<T, DIM+2>& P, Array<int, DIM+2>& state, Array<T
             for(int i = 0; i < shapeP[DIM+1]; ++i){ // for each batch
                 for(int j = 0; j < shapeP[DIM]; ++j){ // for each feature map
                     Array<T, 2> tmpP(P(Range::all(), Range::all(), j, i));
-                    Array<int, 2> tmpState(state(Range::all(), Range::all(), j, i));
+                    Array<T, 2> tmpState(state(Range::all(), Range::all(), j, i));
                     Array<T, 2> tmpOutPooling(outPooling(Range::all(), Range::all(), j, i));
 
                     stochasticPooling(tmpP, tmpState, tmpOutPooling, poolingL.scale);
@@ -313,7 +368,7 @@ void CRBM<T, DIM>::pooling(Array<T, DIM+2>& P, Array<int, DIM+2>& state, Array<T
             for(int i = 0; i < shapeP[DIM+1]; ++i){ // for each batch
                 for(int j = 0; j < shapeP[DIM]; ++j){ // for each feature map
                     Array<T, 3> tmpP(P(Range::all(), Range::all(), Range::all(), j, i));
-                    Array<int, 3> tmpState(state(Range::all(), Range::all(), Range::all(), j, i));
+                    Array<T, 3> tmpState(state(Range::all(), Range::all(), Range::all(), j, i));
                     Array<T, 3> tmpOutPooling(outPooling(Range::all(), Range::all(), Range::all(), j, i));
 
                     maxPooling(tmpP, tmpState, tmpOutPooling, poolingL.scale);
@@ -335,7 +390,7 @@ void CRBM<T, DIM>::pooling(Array<T, DIM+2>& P, Array<int, DIM+2>& state, Array<T
             for(int i = 0; i < shapeP[DIM+1]; ++i){ // for each batch
                 for(int j = 0; j < shapeP[DIM]; ++j){ // for each feature map
                     Array<T, 3> tmpP(P(Range::all(), Range::all(), Range::all(), j, i));
-                    Array<int, 3> tmpState(state(Range::all(), Range::all(), Range::all(), j, i));
+                    Array<T, 3> tmpState(state(Range::all(), Range::all(), Range::all(), j, i));
                     Array<T, 3> tmpOutPooling(outPooling(Range::all(), Range::all(), Range::all(), j, i));
 
                     stochasticPooling(tmpP, tmpState, tmpOutPooling, poolingL.scale);
@@ -350,6 +405,87 @@ void CRBM<T, DIM>::pooling(Array<T, DIM+2>& P, Array<int, DIM+2>& state, Array<T
     }
 
     DEBUGMSG("Unsupport pooling type");
+    exit(EXIT_FAILURE);
+}
+
+template <class T, int DIM>
+void CRBM<T, DIM>::computePV(const Array<T, DIM+2>& hidActP, const Array<T, DIM+2>& visActP, Array<T, DIM+1>& PV)
+{
+    TinyVector<int, DIM+2> shapeHidActP = hidActP.shape();
+    TinyVector<int, DIM+2> shapeVisActP = visActP.shape();
+    TinyVector<int, DIM+1> shapePV = PV.shape();
+
+    int nVisble = shapeVisActP[DIM+1], nHidden = shapeHidActP[DIM+1], nCase = shapeVisActP[DIM];
+
+    PV = 0;
+    const char* type = "valid";
+    if(DIM == 2){
+        for(int i = 0; i < nHidden; ++i){
+            /// for each convolutional kernel
+            for(int k = 0; k < nCase; ++k){
+                /// for each example
+                for(int j = 0; j < nVisble; ++j){
+                    PV(Range::all(), Range::all(), i) += convolve(visActP(Range::all(), Range::all(), k, j), hidActP(Range::all(), Range::all(), k, i), type);
+                }
+            }
+        }
+
+        int numcases = shapeHidActP(0)*shapeHidActP(0)*nVisble;
+        PV = divideScalar(PV, T(numcases));
+
+        return;
+    }
+
+    if(DIM == 3){
+        for(int i = 0; i < nHidden; ++i){
+            /// for each convolutional kernel
+            for(int k = 0; k < nCase; ++k){
+                /// for each example
+                for(int j = 0; j < nVisble; ++j){
+                    PV(Range::all(), Range::all(), Range::all(), i) += convolve(visActP(Range::all(), Range::all(), Range::all(), k, j), hidActP(Range::all(), Range::all(), Range::all(), k, i), type);
+                }
+            }
+        }
+
+        int numcases = shapeHidActP[0]*shapeHidActP[1]*shapeHidActP[2]*nVisble;
+        PV = divideScalar(PV, T(numcases));
+
+        return;
+    }
+
+    DEBUGMSG("Unsupport operation");
+    exit(EXIT_FAILURE);
+}
+
+template <classT, int DIM>
+void CRBM<T. DIM>::computeP(const Array<T, DIM+2>& hidActP, Array<T, 1>& biasHInc)
+{
+    TinyVector<int, DIM+2> shapeHidActP = hidActP.shape();
+
+    int nHidden = biasHInc.size();
+
+    biasHInc = 0;
+
+    if(DIM == 2){
+        for(int i = 0; i < nHidden; ++i){
+            biasHInc(i) = sum(hidActP(Range::all(), Range::all(), Range::all(), i));
+            int numcases = shapeHidActP[0]*shapeHidActP[1];
+            biasHInc(i) /= numcases;
+        }
+
+        return;
+    }
+
+    if(DIM == 3){
+        for(int i = 0; i < nHidden; ++i){
+            biasHInc(i) = sum(hidActP(Range::all(), Range::all(), Range::all(), Range::all(), i));
+            int numcases = shapeHidActP[0]*shapeHidActP[1]*shapeHidActP[2];
+            biasHInc(i) /= numcases;
+        }
+        return;
+    }
+
+    DEBUGMSG("Unsupport operation");
     exit(EXIT_FAILURE);
 }
 

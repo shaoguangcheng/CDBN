@@ -79,7 +79,7 @@ Array<T, 5> shuffleData(const Array<T, 5>& x)
 }
 
 template <class T>
-void maxPooling(Array<T, 2>& P, Array<int, 2>& state, Array<T, 2>& outPooling, int scale)
+void maxPooling(Array<T, 2>& P, Array<T, 2>& state, Array<T, 2>& outPooling, int scale)
 {
     int rowOfOut = P.rows()/scale, colOfOut = P.cols()/scale;
 
@@ -110,10 +110,10 @@ void maxPooling(Array<T, 2>& P, Array<int, 2>& state, Array<T, 2>& outPooling, i
                 for(int m = 0; m < scale; ++m){
                     for(int n = 0; n < scale; ++n){
                         if(m == indexM && n == indexN){
-                            state(i*scale+m,j*scale+n) = 1;
+                            state(i*scale+m,j*scale+n) = T(1);
                         }
                         else{
-                            state(i*scale+m,j*scale+n) = 0;
+                            state(i*scale+m,j*scale+n) = T(0);
                         }
                     }
                 }
@@ -121,7 +121,7 @@ void maxPooling(Array<T, 2>& P, Array<int, 2>& state, Array<T, 2>& outPooling, i
             else{
                 for(int m = 0; m < scale; ++m){
                     for(int n = 0; n < scale; ++n){
-                        state(i*scale+m,j*scale+n) = 0;
+                        state(i*scale+m,j*scale+n) = T(0);
                     }
                 }
             }
@@ -138,7 +138,7 @@ void maxPooling(Array<T, 2>& P, Array<int, 2>& state, Array<T, 2>& outPooling, i
 }
 
 template <class T>
-void maxPooling(Array<T, 3> &P, Array<int, 3> &state, Array<T, 3> &outPooling, int scale)
+void maxPooling(Array<T, 3> &P, Array<T, 3> &state, Array<T, 3> &outPooling, int scale)
 {
     int rowOfOut = P.rows()/scale, colOfOut = P.cols()/scale, depthOfOut = P.depth()/scale;
 
@@ -172,10 +172,10 @@ void maxPooling(Array<T, 3> &P, Array<int, 3> &state, Array<T, 3> &outPooling, i
                         for(int n = 0; n < scale; ++n){
                             for(int l = 0; l < scale; ++l){
                                 if(m == indexM && n == indexN && l == indexL){
-                                    state(i*scale+m,j*scale+n,k*scale+l) = 1;
+                                    state(i*scale+m,j*scale+n,k*scale+l) = T(1);
                                 }
                                 else{
-                                    state(i*scale+m,j*scale+n,k*scale+l) = 0;
+                                    state(i*scale+m,j*scale+n,k*scale+l) = T(0);
                                 }
                             }
                         }
@@ -185,7 +185,7 @@ void maxPooling(Array<T, 3> &P, Array<int, 3> &state, Array<T, 3> &outPooling, i
                     for(int m = 0; m < scale; ++m){
                         for(int n = 0; n < scale; ++n){
                             for(int l = 0; l < scale; ++l){
-                                state(i*scale+m,j*scale+n,k*scale+l) = 0;
+                                state(i*scale+m,j*scale+n,k*scale+l) = T(0);
                             }
                         }
                     }
@@ -217,7 +217,7 @@ void maxPooling(Array<T, 3> &P, Array<int, 3> &state, Array<T, 3> &outPooling, i
  * @param scale size of block to pooling
  */
 template <class T>
-void stochasticPooling(Array<T, 2>& P, Array<int, 2>& state, Array<T, 2>& outPooling, int scale)
+void stochasticPooling(Array<T, 2>& P, Array<T, 2>& state, Array<T, 2>& outPooling, int scale)
 {
     if(P.shape()(0) != outPooling.shape()(0)*scale || P.shape()(1) != outPooling.shape()(1)*scale){
         DEBUGMSG("output of pooling operation occurs error");
@@ -272,10 +272,10 @@ void stochasticPooling(Array<T, 2>& P, Array<int, 2>& state, Array<T, 2>& outPoo
             for(int m = 0; m < scale; ++m){
                 for(int n = 0; n < scale; ++n){
                     if(m*scale+n == index){
-                        state(i*scale+m, j*scale+n) = 1;
+                        state(i*scale+m, j*scale+n) = T(1);
                     }
                     else{
-                        state(i*scale+m, j*scale+n) = 0;
+                        state(i*scale+m, j*scale+n) = T(0);
                     }
                 }
             }
@@ -303,7 +303,7 @@ void stochasticPooling(Array<T, 2>& P, Array<int, 2>& state, Array<T, 2>& outPoo
  * @param scale size of block to pooling
  */
 template <class T>
-void stochasticPooling(Array<T, 3> P, Array<int, 3>& state, Array<T, 3>& outPooling, int scale)
+void stochasticPooling(Array<T, 3> P, Array<T, 3>& state, Array<T, 3>& outPooling, int scale)
 {
     if(P.rows() != outPooling.rows()*scale ||
             P.cols() != outPooling.cols()*scale ||
@@ -365,10 +365,10 @@ void stochasticPooling(Array<T, 3> P, Array<int, 3>& state, Array<T, 3>& outPool
                     for(int n = 0; n < scale; ++n){
                         for(int l = 0; l < scale; ++l){
                             if(m*scale*scale+n*scale+l == index){
-                                state(i*scale+m, j*scale+n, k*scale+l) = 1;
+                                state(i*scale+m, j*scale+n, k*scale+l) = T(1);
                             }
                             else{
-                                state(i*scale+m, j*scale+n, k*scale+l) = 0;
+                                state(i*scale+m, j*scale+n, k*scale+l) = T(0);
                             }
                         }
                     }
