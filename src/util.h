@@ -408,4 +408,7 @@ void stochasticPooling(Array<T, 3> P, Array<T, 3>& state, Array<T, 3>& outPoolin
  */
 int ceiling(int x, int y);
 
+
+
+
 #endif // UTIL_H

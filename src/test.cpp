@@ -123,11 +123,11 @@ void testMultMatrix()
 //////////////////////////test convolution /////////////////
 void testConvolution2D()
 {
-    Array<double, 2> x(3,3);
-    x = 1,2,3,4,5,6,7,8,9;
+    Array<double, 2> x(3,4);
+    x = 1,2,3,4,5,6,7,8,9,1,2,3;
 
-    Array<double, 2> y(3,3);
-    y = 1,2,1,1,1,1,1,2,1;
+    Array<double, 2> y(2,2);
+    y = 1,2,3,2;
 
     cout << "x : " << x << endl;
     cout << "y : " << y << endl;

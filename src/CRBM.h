@@ -56,7 +56,7 @@ private :
      * @param biasH
      * @return
      */
-    Array<T, DIM+2> inference(const Array<T, DIM+2>& batchData, const Array<T, DIM+1>& W, const Array<T, 1> biasH);
+    Array<T, DIM+2> inference(const Array<T, DIM+2>& batchData, const Array<T, DIM+1>& W, const Array<T, 1> &biasH);
 
     /**
      * @brief reconstruct from hidden layer to visible layer
@@ -96,6 +96,13 @@ private :
      * @param biasVInc result of V
      */
     void computeV(const Array<T, DIM+2>& visActP, Array<T, 1>& biasVInc);
+
+    /**
+     * @brief computedhBias compute dhbias for parameters updating
+     * @param hidActP
+     * @param dhbias result of dhbias
+     */
+    void computedhBias(const Array<T, DIM+2> &hidActP, Array<T, 1>& dhbias);
 
 private :
     void trimDataForPooling(Array<T, DIM+2>& batchData, int kernelSize, int blockSize);

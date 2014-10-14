@@ -508,12 +508,34 @@ Array<T, 2> addVectorByCol(const Array<T, 2>& x, const Array<T, 1>& y)
  * @return
  */
 template <class T>
-Array<T, 2> convolve(const Array<T, 2>& x, const Array<T, 2>& kernel, const char* type)
+Array<T, 2> convolve(const Array<T, 2>& x, Array<T, 2> kernel, const char* type)
 {
     TinyVector<int, 2> shapeX = x.shape(), shapeKernel = kernel.shape();
 
     const int first = 0;
     const int second = 1;
+
+    int n = 0;
+    bool isBreak = false;
+    for(int i = 0; i < shapeKernel[first]; ++i){
+        for(int j = 0;j < shapeKernel[second]; ++j){
+
+            n++;
+            if(2*n > kernel.size()){
+                isBreak = true;
+                break;
+            }
+
+            T tmp = kernel(i, j);
+            kernel(i,j) = kernel(shapeKernel[first]-i-1, shapeKernel[second]-j-1);
+            kernel(shapeKernel[first]-i-1, shapeKernel[second]-j-1) = tmp;
+        }
+
+        if(isBreak){
+            break;
+        }
+
+    }
 
     if(!strcmp(type, "valid")){
         if(shapeKernel(first) > shapeX(first)||
@@ -578,13 +600,44 @@ Array<T, 2> convolve(const Array<T, 2>& x, const Array<T, 2>& kernel, const char
  * @return
  */
 template <class T>
-Array<T, 3> convolve(const Array<T, 3>& x, const Array<T, 3>& kernel, const char* type)
+Array<T, 3> convolve(const Array<T, 3>& x, Array<T, 3> kernel, const char* type)
 {
     TinyVector<int, 3> shapeX = x.shape(), shapeKernel = kernel.shape();
 
     const int first  = 0;
     const int second = 1;
     const int third  = 2;
+
+    int n = 0;
+    bool isBreak = false;
+    for(int i = 0; i < shapeKernel[first]; ++i){
+        for(int j = 0;j < shapeKernel[second]; ++j){
+            for(int k = 0; k < shapeKernel[third]; ++k){
+
+                n++;
+                if(2*n > kernel.size()){
+                    isBreak = true;
+                    break;
+                }
+
+                T tmp = kernel(i, j, k);
+                kernel(i,j) = kernel(shapeKernel[first]-i-1, shapeKernel[second]-j-1, shapeKernel[third]-k-1);
+                kernel(shapeKernel[first]-i-1, shapeKernel[second]-j-1, shapeKernel[third]-k-1) = tmp;
+            }
+
+            if(isBreak){
+                break;
+            }
+
+        }
+
+        if(isBreak){
+            break;
+        }
+
+    }
+
+
 
     if(!strcmp(type, "valid")){
         if(shapeKernel(first) > shapeX(first)||
@@ -891,6 +944,56 @@ Array<T, 4> randn(Array<T, 4> x)
     }
 
     return x;
+}
+
+template <class T>
+void square(Array<T, 4>& x)
+{
+    TinyVector<int, 4> shapeX = x.shape();
+
+    for(int i = 0; i < shapeX(0); ++i){
+        for(int j = 0; j < shapeX(1); ++j){
+            for(int k = 0; k < shapeX(2); ++k){
+                for(int l = 0; l < shapeX(3); ++l){
+                    x(i, j, k, l) *= x(i, j, k, l);
+                }
+            }
+        }
+    }
+}
+
+template <class T>
+void square(Array<T, 5>& x)
+{
+    TinyVector<int, 5> shapeX = x.shape();
+
+    for(int i = 0; i < shapeX(0); ++i){
+        for(int j = 0; j < shapeX(1); ++j){
+            for(int k = 0; k < shapeX(2); ++k){
+                for(int l = 0; l < shapeX(3); ++l){
+                    for(int r = 0; r < shapeX(4); ++r){
+                        x(i, j, k, l, r) *= x(i, j, k, l, r);
+                    }
+                }
+            }
+        }
+    }
+}
+
+template <class T>
+T euclidNorm(Array<T, 4>& x)
+{
+    square(x);
+
+    return sum(x);
+}
+
+template <class T>
+T euclidNorm(Array<T, 5>& x)
+{
+    square(x);
+
+    return sum(x);
 }
 
 #endif // MATRIXOPERATION_H
