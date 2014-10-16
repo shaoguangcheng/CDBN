@@ -1,0 +1,9 @@
+function [PV, P] = calParam(data, hidActP)
+%%
+PV = convolutionPV(data, hidActP);
+
+
+
+P = squeeze(sum(sum(sum(hidActP, 1), 2), 3));
+end
+
