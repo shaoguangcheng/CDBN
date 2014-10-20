@@ -14,7 +14,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		mexErrMsgTxt("Too few arguments");
 	}
 
-	char type[6];
 	double* XPtr, *kernelPtr, *resultPtr;
 	int nCase, nDimX, nDimKernel, nFeatureMapVis, nFeatureMapHid, row, col, sizeR, sizeC, sizeSquare, i, j, k, l, numX, numTmpX, numTmpResult, numResult, r, c;
 	const int* dimX, *dimKernel;
@@ -31,9 +30,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		nCase = 1;
 
 	if(nDimX > 3)
-		nFeatureMapVis = dimX[3];
+		nFeatureMapHid = dimX[3];
 	else
-		nFeatureMapVis = 1;
+		nFeatureMapHid = 1;
 
 	kernelPtr = mxGetPr(prhs[1]);
 	nDimKernel = mxGetNumberOfDimensions(prhs[1]); 
@@ -41,30 +40,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	sizeR = dimKernel[0];
 	sizeC = dimKernel[1];
 
-	if(nDimKernel > 2)
-		nFeatureMapHid = dimKernel[2];
-	else
-		nFeatureMapHid = 1;
+	nFeatureMapVis = mxGetScalar(prhs[2]);
 
-	mxGetString(prhs[2], type, 6);
+	r = row + sizeR - 1;
+	c = col + sizeC - 1;
 
-	if(!strcmp(type, "valid")){
-		r = row - sizeR + 1;
-		c = col - sizeC + 1;
-	}
-	else{
-		if(!strcmp(type, "full")){
-			r = row + sizeR - 1;
-			c = col + sizeC - 1;
-		}
-		else{
-			mexErrMsgTxt("Undefined convolution type");			
-		}
-	}
+    int dimResult[4] = {r, c, nCase, nFeatureMapVis};
 
-    int dimResult[4] = {r, c, nCase, nFeatureMapHid};
-
-	plhs[0] = mxCreateNumericArray(nDimX, dimResult, mxDOUBLE_CLASS, mxREAL);
+	plhs[0] = mxCreateNumericArray(4, dimResult, mxDOUBLE_CLASS, mxREAL);
 	resultPtr = mxGetPr(plhs[0]);
 
 	numX = row * col;
@@ -75,10 +58,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	double *tmp = (double*)mxMalloc(numResult * sizeof(double));
 
 	for(i = 0; i < nCase; ++i){
-		for(j = 0; j < nFeatureMapHid; ++j){
+		for(j = 0; j < nFeatureMapVis; ++j){
 
-			for(k = 0; k < nFeatureMapVis; ++k){
-				convolution2d(XPtr + k * numTmpX + i * numX, row, col, kernelPtr + j * sizeSquare, sizeR, sizeC, type, tmp, r, c);
+			for(k = 0; k < nFeatureMapHid; ++k){
+				convolution2d(XPtr + k * numTmpX + i * numX, row, col, kernelPtr + k * sizeSquare, sizeR, sizeC, "full", tmp, r, c);
 
 				for(l = 0; l < numResult; ++l){
 					resultPtr[j * numTmpResult + i * numResult + l] += tmp[l];

@@ -5,6 +5,7 @@ PV = convolutionPV(data, hidActP);
 sizeV = size(data, 1) * size(data, 2);
 sizeH = size(hidActP, 1) * size(hidActP, 2);
 nTimes = size(data, 4) * sizeH; % Fixed me
+%nTimes = sizeH;
 PV = PV./nTimes;
 
 P = squeeze(sum(sum(sum(hidActP, 1), 2), 3));

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
 	if(nlhs > 1){
@@ -11,76 +12,71 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	}
 
 	if(nrhs != 2){
-		mexErrMsgTxt("Too few arguments");
+		mexErrMsgTxt("parameters error");
 	}
 
-	const char* type = "valid";
+	double* XPtr, *kernelPtr, *resultPtr;
+	int nCase, nDimX, nDimKernel, nFeatureMapVis, nFeatureMapHid, row, col, sizeR, sizeC, sizeSquare, i, j, k, l, numX, numTmpX, numTmpResult, numResult, r, c;
+	const int* dimX, *dimKernel;
 
-	double* dataPtr, *PPtr, *resultPtr;
-	int nCase, nDimData, nDimP, nFeatureMapVis, nFeatureMapHid, row, col, sizeR, sizeC, sizeResult, i, j, k, l, numData, numTmpData, numTmpP, numP, r, c;
-	const int* dimData, *dimP;
+	XPtr = mxGetPr(prhs[0]);
+	nDimX = mxGetNumberOfDimensions(prhs[0]); 
+	dimX = mxGetDimensions(prhs[0]);
 
-	dataPtr = mxGetPr(prhs[0]);	
-	nDimData = mxGetNumberOfDimensions(prhs[0]); 
-	dimData = mxGetDimensions(prhs[0]);
-
-	row = dimData[0];
-	col = dimData[1];
-	if(nDimData > 2)
-		nCase = dimData[2];
+	row = dimX[0];
+	col = dimX[1];
+	if(nDimX > 2)
+		nCase = dimX[2];
 	else
 		nCase = 1;
 
-	if(nDimData > 3)
-		nFeatureMapVis = dimData[3];
+	if(nDimX > 3)
+		nFeatureMapVis = dimX[3];
 	else
 		nFeatureMapVis = 1;
 
-	PPtr = mxGetPr(prhs[1]);
-	nDimP = mxGetNumberOfDimensions(prhs[1]); 
-	dimP = mxGetDimensions(prhs[1]);
-	sizeR = dimP[0];
-	sizeC = dimP[1];
+	kernelPtr = mxGetPr(prhs[1]);
+	nDimKernel = mxGetNumberOfDimensions(prhs[1]); 
+	dimKernel = mxGetDimensions(prhs[1]);
+	sizeR = dimKernel[0];
+	sizeC = dimKernel[1];
 
-	if(nCase != dimP[2]){
-		mexErrMsgTxt("Size can not match");		
-	}
-
-	if(nDimP > 3)
-		nFeatureMapHid = dimP[3];
+	if(nDimKernel > 2)
+		nFeatureMapHid = dimKernel[2];
 	else
 		nFeatureMapHid = 1;
 
 	r = row - sizeR + 1;
 	c = col - sizeC + 1;
 
-	int dimResult[3] = {r, c, nFeatureMapHid};
+    int dimResult[4] = {r, c, nCase, nFeatureMapHid};
 
-	plhs[0] = mxCreateNumericArray(3, dimResult, mxDOUBLE_CLASS, mxREAL);
+	plhs[0] = mxCreateNumericArray(4, dimResult, mxDOUBLE_CLASS, mxREAL);
 	resultPtr = mxGetPr(plhs[0]);
 
-	numData = row * col;
-	numTmpData = numData * nCase;
-	numP = sizeR * sizeC;
-	numTmpP = nCase * numP;
-	sizeResult = r * c;
-	double *tmp = (double*)mxMalloc(sizeResult * sizeof(double));
+	numX = row * col;
+	numTmpX = numX * nCase;
+	numResult = r * c;
+	numTmpResult = nCase * numResult;
+	sizeSquare = sizeR * sizeC;
+	double *tmp = (double*)mxMalloc(numResult * sizeof(double));
 
-	for(i = 0; i < nFeatureMapHid; ++i){
-		for(k = 0; k < nCase; ++k){
-			for(j = 0; j < nFeatureMapVis; ++j){
-				convolution2d(dataPtr + j * numTmpData + k * numData, row, col, PPtr + i *numTmpP + k * numP, sizeR, sizeC, type, tmp, r, c);
+	for(i = 0; i < nCase; ++i){
+		for(j = 0; j < nFeatureMapHid; ++j){
 
-				for(l = 0; l < sizeResult; ++l){
-					resultPtr[i * sizeResult + l] += tmp[l];
-				}				
+			for(k = 0; k < nFeatureMapVis; ++k){
+				convolution2d(XPtr + k * numTmpX + i * numX, row, col, kernelPtr + j * sizeSquare, sizeR, sizeC, "valid", tmp, r, c);
+
+				for(l = 0; l < numResult; ++l){
+					resultPtr[j * numTmpResult + i * numResult + l] += tmp[l];
+				}
+
 			}
 		}
 	}
 
 	mxFree(tmp);
 }
-
 
 void convolution2d(double* X, int row, int col, double* kernel, int sizeR, int sizeC, const char* type, double* result, int r, int c)
 {

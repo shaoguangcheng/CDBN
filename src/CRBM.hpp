@@ -250,7 +250,6 @@ void CRBM<T, DIM>::train()
         }
 
         cout << "Epoch " << i << ", reconstruction error " << error << endl;
-
     }
 
 }

@@ -17,12 +17,12 @@ args = prepareArgs(varargin);
     biasMode    ...
     verbose] = processOptions(args  , ...
     'inputType'  ,  'Bernoulli' , ...
-    'digma'      ,  1           , ...
-    'poolingScale', 2      , ...
+    'sigma'      ,  0.15           , ...
+    'poolingScale', 4      , ...
     'poolingType', 'stochastic' , ...
     'sparsity'   ,  0.002       , ...
     'lambda1'    ,  0.01        , ...
-    'lambda2'    ,  0.5         , ...
+    'lambda2'    ,  0.05           , ...
     'alpha'      ,  0.01        , ...
     'maxEpoch'   ,  20          , ...
     'batchSize'  ,  2           , ...
@@ -30,16 +30,15 @@ args = prepareArgs(varargin);
     'biasMode'   ,  'simple'    , ...
     'verbose'    ,  true);
 
+X = trimDataForPooling(X, kernelSize, poolingScale);
+
 [row, col, nCase, nFeatureMapVis] = size(X);
 
-%% create batches
+%% shuffle data
 nBatch = ceil(nCase/batchSize);
-groups = repmat(1:nBatch, 1, batchSize);
-groups = groups(1:nCase);
-groups = groups(randperm(nCase));
-for i = 1 : nBatch 
-    batchData{i} = X(:,:,groups == i, :);
-end
+
+groups = randperm(nCase);
+X = X(:,:,groups,:);
 
 %% initialize parameters
 W = 0.01*randn(kernelSize, kernelSize, nFeatureMapHid);
@@ -60,11 +59,14 @@ hidState = zeros(row, col, batchSize, nFeatureMapHid);
 
 %% start 
 for epoch = 1 : maxEpoch 
-    error = 0;
-    currentSparsity = 0;
+    error = 0;   
+    currentSparsity = zeros(1,nBatch);
     for batch = 1 : nBatch
-        data = batchData{batch};
-        batchSize = size(data, 3);
+        if batch *batchSize > nCase
+            data = X(:,:,(batch-1)*batchSize+1:nCase,:);
+        else
+            data = X(:,:,(batch-1)*batchSize+1:batch*batchSize,:);
+        end
         
         hidInput = inference(data, W, biasH, inputType, sigma);
         [hidActP, poolingOutput, hidState] = pooling(hidInput, poolingScale, poolingType);
@@ -73,17 +75,18 @@ for epoch = 1 : maxEpoch
         
         for i = 1 : nCD
            visActP = reconstruct(hidState, W, biasV, inputType);
-           hidInput = inference(visActP, W, inputType, sigma);
+           hidInput = inference(visActP, W, biasH, inputType, sigma);
            [hidActP, poolingOutput, hidState] = pooling(hidInput, poolingScale, poolingType);
         end
         
-        [PV2, P2, V1] = calParam(visActP, hidActP);
+        [PV2, P2, V2] = calParam(visActP, hidActP);
         
         if strcmp(biasMode, 'simple')
             dBiasH = squeeze(mean(mean(mean(hidActP, 1), 2), 3)) - sparsity;
         end
         
         %%
+        
         dW = (PV1 - PV2)/batchSize - lambda1 * W + lambda2 * dW;
         dBiasV = (V1 - V2)/batchSize + lambda2 * dBiasV;
         dBiasH = (P1 - P2)/batchSize + lambda2 * dBiasH;
@@ -104,13 +107,16 @@ for epoch = 1 : maxEpoch
         biasH = biasH + biasHInc;
         
         error = error + sum((data(:) - visActP(:)).^2);
-        currentSparsity = currentSparsity + mean(hidActP);
+        currentSparsity(i) = mean(hidActP(:));
     end
     
-    currentSparsity = currentSparsity/nBatch;
+    currentSparsity = mean(currentSparsity);
+    
+    figure(1);
+    displayNetwork(reshape(W, [kernelSize*kernelSize, nFeatureMapHid]));
     
     if verbose
-        fprintf('Epoch %d, reconstruction error %lf, sparsity %lf\n', epoch, error, currentSparsity);
+        fprintf('Epoch %d, reconstruction error %f, sparsity %f\n', epoch, error, currentSparsity);
     end
     
 end
