@@ -18,21 +18,21 @@ args = prepareArgs(varargin);
     verbose] = processOptions(args  , ...
     'inputType'  ,  'Bernoulli' , ...
     'sigma'      ,  0.15           , ...
-    'poolingScale', 4      , ...
+    'poolingScale', 2      , ...
     'poolingType', 'stochastic' , ...
     'sparsity'   ,  0.002       , ...
     'lambda1'    ,  0.01        , ...
     'lambda2'    ,  0.05           , ...
     'alpha'      ,  0.01        , ...
     'maxEpoch'   ,  20          , ...
-    'batchSize'  ,  2           , ...
+    'batchSize'  ,  1           , ...
     'nCD'        ,  1           , ...
     'biasMode'   ,  'simple'    , ...
     'verbose'    ,  true);
 
 X = trimDataForPooling(X, kernelSize, poolingScale);
 
-[row, col, nCase, nFeatureMapVis] = size(X);
+[row, col, nCase, nFeatureMapVis] = size(X)
 
 %% shuffle data
 nBatch = ceil(nCase/batchSize);
@@ -59,15 +59,19 @@ hidState = zeros(row, col, batchSize, nFeatureMapHid);
 
 %% start 
 for epoch = 1 : maxEpoch 
-    error = 0;   
+    error = zeros(1,nBatch);   
     currentSparsity = zeros(1,nBatch);
-    for batch = 1 : nBatch
-        if batch *batchSize > nCase
-            data = X(:,:,(batch-1)*batchSize+1:nCase,:);
-        else
-            data = X(:,:,(batch-1)*batchSize+1:batch*batchSize,:);
-        end
-        
+    groups = randi(nCase, [1,3]);
+    for batch = 1 : length(groups)
+%    for batch = 1 : nBatch
+%         if batch *batchSize > nCase
+%             data = X(:,:,(batch-1)*batchSize+1:nCase,:);
+%         else
+%             data = X(:,:,(batch-1)*batchSize+1:batch*batchSize,:);
+%         end
+    
+        data = X(:,:,groups(batch));
+
         hidInput = inference(data, W, biasH, inputType, sigma);
         [hidActP, poolingOutput, hidState] = pooling(hidInput, poolingScale, poolingType);
         
@@ -106,11 +110,12 @@ for epoch = 1 : maxEpoch
         biasV = biasV + biasVInc;
         biasH = biasH + biasHInc;
         
-        error = error + sum((data(:) - visActP(:)).^2);
+        error(i) = mean((data(:) - visActP(:)).^2);
         currentSparsity(i) = mean(hidActP(:));
     end
     
     currentSparsity = mean(currentSparsity);
+    error = mean(error);
     
     figure(1);
     displayNetwork(reshape(W, [kernelSize*kernelSize, nFeatureMapHid]));

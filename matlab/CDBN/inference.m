@@ -10,7 +10,7 @@ end
 
 if strcmp(inputType, 'gaussian')
     sigma = varargin{1};
-    hidInput = 1/sigma^2 .* hidInput;    
+    hidInput = 1/(sigma^2) .* hidInput;    
 end
 
 %% whether need sigmoid here. Fixed me

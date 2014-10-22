@@ -2,7 +2,6 @@ function [ images ] = preprocess(dataPath)
 %%
 images = readImages(dataPath);
 images = whiten(images);
-%images = sampleImages(images);
 end
 
 function [images] = readImages(dataPath)
@@ -59,24 +58,6 @@ for i = 1 : N
     im_out = im_out/sqrt(mean(mean(im_out.^2)));
     im_out = sqrt(0.1)*im_out;
     images(:,:,i) = im_out;
-end
-
-end
-
-function imdata = sampleImages(images)
-[row, col, N] = size(images);
-nSamplePerImages = 10;
-sampleSize = 30;
-
-for i = 1 : N
-    image = images(:,:,i);
-    for j = 1 : nSamplePerImages
-            rowidx = ceil(rand*(row-sampleSize))+[1:sampleSize];
-            colidx = ceil(rand*(col-sampleSize))+[1:sampleSize];
-            im = image(rowidx, colidx);
-            im = im - mean(im(:));
-            imdata(:,:,(i-1)*nSamplePerImages+j) = im;
-    end
 end
 
 end
