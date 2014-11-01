@@ -205,7 +205,6 @@ classdef crbm
            % ---------------------------
            % bottom-up process
            % ---------------------------
-           self.hidInput = zeros(size(self.hidInput));
            for i = 1 : self.nFeatureMapHid
               for j = 1 : self.nFeatureMapVis
                  self.hidInput(:,:,i) = self.hidInput(:,:,i) + conv2(data(:,:,j), self.ff(self.W(:,:,j,i)), 'valid'); 
@@ -260,20 +259,7 @@ classdef crbm
             % -------------------------
             % top-down process
             % -------------------------
-            hidState = (rand(size(hidSample)) < hidSample);
-            self.visInput = zeros(size(self.visInput));
-            for i = 1 : self.nFeatureMapVis
-                for j = 1 : self.nFeatureMapHid
-                    self.visInput(:,:,i) = self.visInput(:,:,i) + conv2(hidState(:,:,j), self.W(:,:,i,j), 'full');
-                end
-                self.visInput(:,:,i) = self.visInput(:,:,i) + self.visBias(i);
-            end
-            
-            if ~strcmp(self.inputType, 'binary')
-                self.visSample = sigmoid(self.visInput);
-            else
-                self.visSample = self.visInput;
-            end        
+            hidState = (rand(size()) <);
         end
         
         function self = applyGradient(self, dW, dVisBias, dHidBias)
