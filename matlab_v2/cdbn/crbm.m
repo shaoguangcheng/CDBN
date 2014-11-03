@@ -14,7 +14,7 @@ classdef crbm
         
         % structure parameters
         inputType = 'binary'; % Supports binary and Gaussian inputs
-        nFeatureMapVis;   % number of feature map of visual layer. Default as a single crbm.
+        nFeatureMapVis;       % number of feature map of visual layer. Default as a single crbm.
         nFeatureMapHid = 10;  % number of feature map of hidden layer. Default as 10.
         visSize;              % size of visual feature map
         kernelSize = [7, 7];  % size of filter
@@ -67,7 +67,7 @@ classdef crbm
             % parse parameters
             if isfield(netStructure, 'opt')
                 opt = netStructure.opt; % opt must be a cell
-                fname = filednames(self);
+                fname = fieldnames(self);
                 for i = 1 : 2 : numel(opt)
                     if ~isstr(opt{i})
                         error('opt must be a cell array string-value pairs.')
@@ -82,8 +82,8 @@ classdef crbm
             self.nFeatureMapVis = netStructure.nFeatureMapVis;
             self.inputType = netStructure.inputType;
             
-            if ~isfield(netStructure, 'nFeatureMapVis')
-                self.nFeatureMapVis = netStructure.nFeatureMapVis;
+            if isfield(netStructure, 'nFeatureMapHid')
+                self.nFeatureMapHid = netStructure.nFeatureMapHid;
             end
             
             if isfield(netStructure,'kernelSize');
@@ -135,7 +135,7 @@ classdef crbm
             nBatch = size(data, 3);
             penalty = self.lambda2;
             
-            for epoch = 1:nEpoch
+            for epoch = 1:self.nEpoch
                err = 0;
                currentSparity = zeros(1, nBatch);
                if self.isAnneal
@@ -156,12 +156,17 @@ classdef crbm
                    [self, dW, dVisBias, dHidBias] = self.calcGradient(batchData);
                    self = self.applyGradient(dW, dVisBias, dHidBias);
                    
+                  if self.sparsity
+                    self.hidBias = self.hidBias + ...
+                    self.learningRate*self.lambda1*(squeeze(self.sparsity-mean(mean(self.initHidSample))));
+                  end
+                   
                    err = err + self.batchError(batchData);
                    currentSparity(i) = mean(self.initHidSample(:));
                end
                
                if self.verbose & ~mod(epoch, self.displayInterval)
-                   fprintf(1, 'epoch %d, reconstruction error %f, current sparsity %f\n', epoch, err, mean(currentSparsity(:)));
+                   fprintf(1, 'epoch %d, reconstruction error %f, current sparsity %f\n', epoch, err, mean(currentSparity(:)));
                end
             end
             
@@ -195,10 +200,12 @@ classdef crbm
            % -------------------------
            % inference
            [self, self.initHidSample] = self.inference(data);
+           self.hidSample = self.initHidSample;
            for i = 1 : self.nCD
               self = self.reconstruct(self.hidSample);
               [self, self.hidSample] = self.inference(self.visSample);
            end
+           
         end
         
         function [self, hidSample] = inference(self, data)
@@ -212,17 +219,15 @@ classdef crbm
               end
                self.hidInput(:,:,i) =  self.hidInput(:,:,i) + self.hidBias(i);
            end
-           
            hidSample = exp(self.hidInput)./(1+self.blockSum(exp(self.hidInput)));
-           self.hidSample = hidSample;
         end
         
         function block = blockSum(self, input)
             % ----------------------------------------------
             % hidden activation summation over block (HongLak Lee's article)
             % ----------------------------------------------
-            rows = size(input, 1);
-            cols = size(input, 2);
+            cols = size(input, 1);
+            rows = size(input, 2);
             xStride = self.poolingScale(1);
             yStride = self.poolingScale(2);
             block = zeros(size(input));
@@ -240,7 +245,7 @@ classdef crbm
             % -----------------------------------
             % calcualte the output of pooling layer
             % -----------------------------------
-            hidInput = zeros(self.hidSample);
+            hidInput = zeros(size(self.hidSample));
            for i = 1 : self.nFeatureMapHid
               for j = 1 : self.nFeatureMapVis
                  hidInput(:,:,i) = self.hidInput(:,:,i) + conv2(data(:,:,j), self.ff(self.W(:,:,j,i)), 'valid'); 
@@ -253,14 +258,14 @@ classdef crbm
            yStride = self.poolingScale(2);
            rows = size(self.hidSample,1);
            cols = size(self.hidSample,2);
-           self.outputPooling = hidSample(1:yStride:rows, 1:xStride,cols, :);
+           self.outputPooling = hidSample(1:yStride:rows, 1:xStride:cols, :);
         end
         
         function self = reconstruct(self, hidSample)
             % -------------------------
             % top-down process
             % -------------------------
-            hidState = (rand(size(hidSample)) < hidSample);
+            hidState = double(rand(size(hidSample)) < hidSample);
             self.visInput = zeros(size(self.visInput));
             for i = 1 : self.nFeatureMapVis
                 for j = 1 : self.nFeatureMapHid
@@ -273,13 +278,25 @@ classdef crbm
                 self.visSample = sigmoid(self.visInput);
             else
                 self.visSample = self.visInput;
-            end        
+            end  
         end
         
         function self = applyGradient(self, dW, dVisBias, dHidBias)
            % --------------------------
            % apply gradient
            % --------------------------
+           [self.W, self.dW] = self.updateParam(self.W, dW, self.dW, self.lambda2);
+           [self.visBias, self.dVisBias] = self.updateParam(self.visBias, dVisBias, self.dVisBias, 0);
+           [self.hidBias, self.dHidBias] = self.updateParam(self.hidBias, dHidBias, self.dHidBias, 0);
+           
+        end
+        
+        function [param, dParam] = updateParam(self, param, inc, dParam, penalty)
+           % ----------------------------
+           % update parameters
+           % ----------------------------
+           dParam = self.momentum*dParam + (1 - self.momentum)*inc;
+           param = param + self.learningRate*(dParam - penalty*param);
         end
         
         function out = ff(self, in)
@@ -287,6 +304,11 @@ classdef crbm
             % flip array in
             % --------------------------
             out = in(end:-1:1,end:-1:1,:);
+        end
+        
+        function err = batchError(self, data)
+            err = (data - self.visSample).^2;
+            err = sum(err(:));
         end
         
     end
