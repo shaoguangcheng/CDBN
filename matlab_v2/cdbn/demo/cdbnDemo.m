@@ -1,10 +1,11 @@
-% test crbm
+% test cdbn
 % -------------------------------------------
 % This implementation is based on 'Unsupervised Learning of Hierarchical Representations
 % with Convolutional Deep Belief Networks' by Honglak Lee. 
 % -------------------------------------------
 % By shaoguangcheng. From Xi'an, China
 % Email : chengshaoguang1291@126.com
+
 if ispc
     addpath('..\', '..\data', '..\util');
     dataPath = '..\data\mnistSmall';
@@ -15,50 +16,38 @@ if isunix
     dataPath = '../data/mnistSmall';
 end
 
-
 load(dataPath);
 trainData = reshape(trainData', [28,28,10000]);
-trainData = trainData(:,:,1:20);
-dataSize = [28,28];
+trainData = trainData(:,:,1);
+dataSize1 = [28,28];
+dataSize2 = [11,11]
 
-arch = struct('dataSize', dataSize, ...
+arch1 = struct('dataSize', dataSize1, ...
         'nFeatureMapVis', 1, ...
 		'nFeatureMapHid', 9, ...
         'kernelSize', [7 7], ...
         'poolingScale', [2 2], ...
         'inputType', 'binary');
 
-arch.opt = {'nEpoch', 1, ...
+arch1.opt = {'nEpoch', 1, ...
 			 'learningRate', .05, ...
 			 'displayInterval',10, ...
 			 'sparsity', .02, ...
 			 'lambda1', 5, ...
              'isUseGPU', 0};
          
-m = crbm(arch);
+arch2 = struct('dataSize', dataSize2, ...
+        'nFeatureMapVis', 9, ...
+		'nFeatureMapHid', 20, ...
+        'kernelSize', [7 7], ...
+        'poolingScale', [2 2], ...
+        'inputType', 'binary');
+
+arch2.opt = {'nEpoch', 1, ...
+			 'learningRate', .05, ...
+			 'displayInterval',10, ...
+			 'sparsity', .02, ...
+			 'lambda1', 5, ...
+             'isUseGPU', 0};
+m = cdbn([arch1, arch2]);
 m = m.train(trainData);
-
-[m, hidSample] = m.inference(trainData(:,:,7));
-m  = m.crbmFeedForward(trainData);
-
-figure(1);
-[r,c,n]=size(m.W);
-W = reshape(m.W,r*c,n);
-visWeights(W,1);
-title('Convolution Kernel');
-
-figure(2);
-imagesc(trainData(:,:,7)); colormap gray; axis image; axis off
-title(sprintf('Original Sample'));
-
-figure(3);
-[r,c,n]=size(hidSample);
-hidSample = reshape(hidSample,r*c,n);
-visWeights(hidSample);
-title('Feature Maps')
-
-figure(4);
-[r,c,n] = size(m.outputPooling(:,:,7,:));
-visWeights(reshape(m.outputPooling(:,:,7,:),r*c,n)); colormap gray
-title(sprintf('Pooling output'))
-drawnow

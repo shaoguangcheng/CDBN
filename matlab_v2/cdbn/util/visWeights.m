@@ -1,7 +1,6 @@
 function imOut = visWeights(W, transIms, cLims, sortNorms, nShow, borderPix)
-%  imOut = visWeights(W, transIms, cLims, sortNorms, borderPix,nShow)
-%-------------------------------------------------------------------
-if notDefined('cLims'), cLims = 1; end; % SCALE BY L2 NORM BY DEFAULT
+
+if notDefined('cLims'), cLims = 1; end;
 if notDefined('sortNorms'); sortNorms = 0; end
 if notDefined('transIms'); transIms = 0; end
 if notDefined('borderPix'); borderPix = 1; end
@@ -17,7 +16,6 @@ end
 W = W(:,1:nShow);
 wNorm = wNorm(1:nShow);
 
-% SCALE EACH FEATURE BY ITS L2 NORM
 if numel(cLims) < 2 & cLims
 	W = bsxfun(@rdivide,W,wNorm);
 end

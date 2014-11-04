@@ -5,10 +5,13 @@ classdef crbm
 % Supports multiple feature maps inputs.
 %
 % This implementation is based on 'Unsupervised Learning of Hierarchical Representations
-% with Convolutional Deep Belief Networks' by Honglak Lee.
+% with Convolutional Deep Belief Networks' by Honglak Lee. 
 %
+% I make some references of Dustin Stansbury's MEDAL. Appreciate his
+% great work.
 % -------------------------------------------------------------------------------------
-% By shaoguangcheng. Email : chengshaoguang1291@126.com
+% By shaoguangcheng. From Xi'an, China.
+% Email : chengshaoguang1291@126.com
     properties
         className = 'crbm';
         
@@ -41,7 +44,7 @@ classdef crbm
         learningRate = 0.01;
         nCD = 1;
         sparsity = 0.02;
-        lambda1 = 1;          % coefficient of sparsity term
+        lambda1 = 5;          % coefficient of sparsity term
         lambda2 = 0.05;       % coefficient of weight decay term
         momentum = 0.9;
         isAnneal = false;      % whether to decay the learning rate
@@ -85,6 +88,18 @@ classdef crbm
             
             if isfield(netStructure, 'nFeatureMapHid')
                 self.nFeatureMapHid = netStructure.nFeatureMapHid;
+            end
+            
+            if isfield(netStructure, 'nFeatureMapVis')
+                self.nFeatureMapVis = netStructure.nFeatureMapVis;
+            end
+            
+            if isfield(netStructure, 'poolingScale')
+                if numel(netStructure.poolingScale) == 1
+                    self.poolingScale  = ones(1,2)*self.poolingScale;
+                else
+                    self.poolingScale = netStructure.poolingScale;
+                end
             end
             
             if isfield(netStructure,'kernelSize');
@@ -141,7 +156,7 @@ classdef crbm
             %
             % treat a single example as a batch. In another words,
             % batchsize is 1 according to Honglak Lee's thesis
-            % ----------------------------
+            % ----------------------------           
             tic;
             
             if self.isUseGPU
@@ -151,6 +166,9 @@ classdef crbm
             
             nBatch = size(data, 3);
             penalty = self.lambda2;
+            
+            index = randperm(nBatch);
+            data = data(:,:,index,:);
             
             for epoch = 1:self.nEpoch
                err = 0;
@@ -217,7 +235,7 @@ classdef crbm
            
            for i = 1 : self.nFeatureMapHid
               for j = 1 : self.nFeatureMapVis
-                  dW(:,:,j,i) = conv2(data(:,:,j), self.ff(self.initHidSample(:,:,i)), 'valid') - ...
+                  dW(:,:,j,i) = conv2(data(:,:,1,j), self.ff(self.initHidSample(:,:,i)), 'valid') - ...
                       conv2(self.visSample(:,:,j), self.ff(self.hidSample(:,:,i)), 'valid');
               end 
            end
@@ -225,6 +243,11 @@ classdef crbm
            dVisBias = squeeze(sum(sum(data - self.visSample, 1), 2));
            dHidBias = squeeze(sum(sum(self.initHidSample - self.hidSample, 1), 2));
            
+           % ------------------------
+           % here fixed me a lot : according to Honglak Lee's paper, we
+           % need to divide the area of feature map. But result will be
+           % better if we do not do these operations.
+           % ------------------------
            nSize = size(dW,1)*size(dW,2);
            dW = dW/nSize;
            dHidBias = dHidBias/nSize;
@@ -256,7 +279,7 @@ classdef crbm
            
            for i = 1 : self.nFeatureMapHid
               for j = 1 : self.nFeatureMapVis
-                 self.hidInput(:,:,i) = self.hidInput(:,:,i) + conv2(data(:,:,j), self.ff(self.W(:,:,j,i)), 'valid'); 
+                 self.hidInput(:,:,i) = self.hidInput(:,:,i) + conv2(data(:,:,1,j), self.ff(self.W(:,:,j,i)), 'valid'); 
               end
                self.hidInput(:,:,i) =  self.hidInput(:,:,i) + self.hidBias(i);
            end
@@ -277,9 +300,9 @@ classdef crbm
                 block = gpuArray(block);
             end
             
-            for i = 1 : ceil(rows/yStride)
+            for i = 1 : floor(rows/yStride)
                 offsetRow = ((i-1)*yStride+1):(i*yStride);
-               for j = 1 : ceil(cols/xStride)
+               for j = 1 : floor(cols/xStride)
                    offsetCol = ((j-1)*xStride+1):(j*xStride);
                    blockVal = squeeze(sum(sum(input(offsetRow, offsetCol, :))));
                    block(offsetRow, offsetCol, :) = repmat(permute(blockVal, [2,3,1]), numel(offsetRow), numel(offsetCol));
@@ -287,24 +310,30 @@ classdef crbm
             end
         end
         
-        function self = pooling(self, data)
+        function self = crbmFeedForward(self, data)
             % -----------------------------------
             % calcualte the output of pooling layer
             % -----------------------------------
-            hidInput = zeros(size(self.hidSample));
-           for i = 1 : self.nFeatureMapHid
-              for j = 1 : self.nFeatureMapVis
-                 hidInput(:,:,i) = self.hidInput(:,:,i) + conv2(data(:,:,j), self.ff(self.W(:,:,j,i)), 'valid'); 
-              end
-               hidInput(:,:,i) =  self.hidInput(:,:,i) + self.hidBias(i);
-           end
-           
-           hidSample = 1 - (1./(1+self.blockSum(exp(hidInput))));
-           xStride = self.poolingScale(1);
-           yStride = self.poolingScale(2);
-           rows = size(self.hidSample,1);
-           cols = size(self.hidSample,2);
-           self.outputPooling = hidSample(1:yStride:rows, 1:xStride:cols, :);
+            nCase = size(data, 3);
+            xStride = self.poolingScale(1);
+            yStride = self.poolingScale(2);
+            rows = size(self.hidSample,1);
+            cols = size(self.hidSample,2);
+            self.outputPooling = zeros(floor(rows/yStride), floor(cols/xStride), nCase, self.nFeatureMapHid);
+            
+            for k = 1 : nCase
+               batchData = data(:,:,k,:);
+               self.hidInput = zeros(size(self.hidSample));
+               for i = 1 : self.nFeatureMapHid
+                  for j = 1 : self.nFeatureMapVis
+                     self.hidInput(:,:,i) = self.hidInput(:,:,i) + conv2(batchData(:,:,j), self.ff(self.W(:,:,j,i)), 'valid'); 
+                  end
+                  self. hidInput(:,:,i) =  self.hidInput(:,:,i) + self.hidBias(i);
+               end
+
+               hidSample = 1 - (1./(1+self.blockSum(exp(self.hidInput))));
+               self.outputPooling(:,:,k,:) = hidSample(1:yStride:rows, 1:xStride:cols, :);
+            end
         end
         
         function self = reconstruct(self, hidSample)
@@ -364,9 +393,12 @@ classdef crbm
         end
         
         function [] = save(self)
-           fmt = sprintf('%s%s%s_model.mat',self.outputFolder, filesep, datestr(clock))
-           var = self;
-           save(fmt, 'var');
+           fmt = sprintf('%s%s%s_crbm_model.mat',self.outputFolder, filesep, datestr(clock, 'yyyy_mm_dd_HH_MM_SS'));
+           crbmModel = {};
+           crbmModel.W = self.W;
+           crbmModel.visBias = self.visBias;
+           crbmModel.hidBias = self.hidBias;
+           save(fmt, 'crbmModel');
         end
         
     end
