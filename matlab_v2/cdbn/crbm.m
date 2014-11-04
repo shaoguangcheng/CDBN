@@ -44,7 +44,7 @@ classdef crbm
         lambda1 = 1;          % coefficient of sparsity term
         lambda2 = 0.05;       % coefficient of weight decay term
         momentum = 0.9;
-        isAnneal = true;      % whether to decay the learning rate
+        isAnneal = false;      % whether to decay the learning rate
         startWeightDecay = 1; % when to start weight decay
         
         % other parameters
@@ -52,6 +52,7 @@ classdef crbm
         device;
         verbose = 1;          
         displayInterval = 1;
+        isSaveModel = 1;
         outputFolder;
         timeConsumed;
     end
@@ -105,6 +106,22 @@ classdef crbm
             
             hidSize = self.visSize - self.kernelSize + 1;
             self.hidInput = zeros(hidSize(1), hidSize(2), self.nFeatureMapHid);
+            
+            if self.isUseGPU
+                self.W = gpuArray(self.W);
+                self.dW = gpuArray(self.dW);
+                self.visBias = gpuArray(self.visBias);
+                self.dVisBias = gpuArray(self.dVisBias);
+                self.hidBias = gpuArray(self.hidBias);
+                self.dHidBias = gpuArray(self.dHidBias);
+                self.visInput = gpuArray(self.visInput);
+                self.hidInput = gpuArray(self.hidInput);
+            end
+            
+            self.outputFolder = sprintf('%s%s%s','..', filesep, 'log');
+            if ~exist(self.outputFolder, 'dir')
+                mkdir(self.outputFolder);
+            end
         end
         
         function self = checkStructure(self, netStructure)
@@ -129,7 +146,7 @@ classdef crbm
             
             if self.isUseGPU
                 self.device = gpuDevice;
-                data = gpuarray(data);
+                data = gpuArray(data);
             end
             
             nBatch = size(data, 3);
@@ -137,7 +154,12 @@ classdef crbm
             
             for epoch = 1:self.nEpoch
                err = 0;
-               currentSparity = zeros(1, nBatch);
+               currentSparsity = zeros(1, nBatch);
+               
+               if self.isUseGPU
+                  currentSparsity = gpuArray(currentSparsity); 
+               end
+               
                if self.isAnneal
                   self.learningRate = max(1e-7, self.learningRate/epoch); 
                end
@@ -162,11 +184,12 @@ classdef crbm
                   end
                    
                    err = err + self.batchError(batchData);
-                   currentSparity(i) = mean(self.initHidSample(:));
+                   currentSparsity(i) = mean(self.initHidSample(:));
                end
                
                if self.verbose & ~mod(epoch, self.displayInterval)
-                   fprintf(1, 'epoch %d, reconstruction error %f, current sparsity %f\n', epoch, err, mean(currentSparity(:)));
+                   fprintf(1,'epoch %d, reconstruction error %f, current sparsity %f\n', epoch, err, mean(currentSparsity(:)));
+                   
                end
             end
             
@@ -174,6 +197,10 @@ classdef crbm
             if self.isUseGPU
                 self = gather(self);
                 reset(self.device); 
+            end
+            
+            if self.isSaveModel
+               self.save; 
             end
         end
         
@@ -183,6 +210,11 @@ classdef crbm
            % --------------------------------
            self = self.gibbsSample(data);
            dW = zeros(size(self.W));
+           
+           if self.isUseGPU
+              dW = gpuArray(dW); 
+           end
+           
            for i = 1 : self.nFeatureMapHid
               for j = 1 : self.nFeatureMapVis
                   dW(:,:,j,i) = conv2(data(:,:,j), self.ff(self.initHidSample(:,:,i)), 'valid') - ...
@@ -192,6 +224,11 @@ classdef crbm
            
            dVisBias = squeeze(sum(sum(data - self.visSample, 1), 2));
            dHidBias = squeeze(sum(sum(self.initHidSample - self.hidSample, 1), 2));
+           
+           nSize = size(dW,1)*size(dW,2);
+           dW = dW/nSize;
+           dHidBias = dHidBias/nSize;
+           dVisBias = dVisBias/prod(self.visSize);
         end
         
         function self = gibbsSample(self, data)
@@ -213,6 +250,10 @@ classdef crbm
            % bottom-up process
            % ---------------------------
            self.hidInput = zeros(size(self.hidInput));
+           if self.isUseGPU
+                self.hidInput = gpuArray( self.hidInput); 
+           end
+           
            for i = 1 : self.nFeatureMapHid
               for j = 1 : self.nFeatureMapVis
                  self.hidInput(:,:,i) = self.hidInput(:,:,i) + conv2(data(:,:,j), self.ff(self.W(:,:,j,i)), 'valid'); 
@@ -231,6 +272,11 @@ classdef crbm
             xStride = self.poolingScale(1);
             yStride = self.poolingScale(2);
             block = zeros(size(input));
+            
+            if self.isUseGPU
+                block = gpuArray(block);
+            end
+            
             for i = 1 : ceil(rows/yStride)
                 offsetRow = ((i-1)*yStride+1):(i*yStride);
                for j = 1 : ceil(cols/xStride)
@@ -267,6 +313,12 @@ classdef crbm
             % -------------------------
             hidState = double(rand(size(hidSample)) < hidSample);
             self.visInput = zeros(size(self.visInput));
+            
+            if self.isUseGPU
+               hidState = gpuArray(hidState);
+               self.visInput = gpuArray(self.visInput);
+            end
+            
             for i = 1 : self.nFeatureMapVis
                 for j = 1 : self.nFeatureMapHid
                     self.visInput(:,:,i) = self.visInput(:,:,i) + conv2(hidState(:,:,j), self.W(:,:,i,j), 'full');
@@ -309,6 +361,12 @@ classdef crbm
         function err = batchError(self, data)
             err = (data - self.visSample).^2;
             err = sum(err(:));
+        end
+        
+        function [] = save(self)
+           fmt = sprintf('%s%s%s_model.mat',self.outputFolder, filesep, datestr(clock))
+           var = self;
+           save(fmt, 'var');
         end
         
     end
