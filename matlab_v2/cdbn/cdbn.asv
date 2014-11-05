@@ -78,27 +78,22 @@ classdef cdbn
         
         function feature = getUnpoolingFeature(self, data, layer)
             % -----------------------------
-            % extracting unpooling features of layer for data
+            % extracting features of layer for data
             % -----------------------------
             if layer == 1
-               [m, feature] = self.model{1}.inference(data); 
+               feature = self.model{1}.inference(data); 
             end
             
             if layer > 1
                 for i = 1 : layer - 1
-  %                  data = self.model{i}.trimDataForPooling(data);
                     m = self.model{i}.crbmFeedForward(data);
                     data = m.outputPooling;
                 end
-                 data = self.model{layer}.trimDataForPooling(data);
-                [m, feature] = self.model{layer}.inference(data);
+                feature =
             end
         end
         
         function [] = save(self)
-            % ----------------------------
-            % save cdbn
-            % ----------------------------
             fmt = sprintf('%s%s%s_cdbn_model.mat',self.outputFolder, ...
                 filesep, datestr(clock, 'yyyy_mm_dd_HH_MM_SS')); 
             

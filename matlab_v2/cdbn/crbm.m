@@ -55,7 +55,7 @@ classdef crbm
         device;
         verbose = 1;          
         displayInterval = 1;
-        isSaveModel = 1;
+        isSaveModel = 0;
         outputFolder;
         timeConsumed;
     end
@@ -85,7 +85,7 @@ classdef crbm
             self.visSize(2) = netStructure.dataSize(2);
             self.nFeatureMapVis = netStructure.nFeatureMapVis;
             self.inputType = netStructure.inputType;
-            
+                        
             if isfield(netStructure, 'nFeatureMapHid')
                 self.nFeatureMapHid = netStructure.nFeatureMapHid;
             end
@@ -159,6 +159,8 @@ classdef crbm
             % ----------------------------           
             tic;
             
+            data = self.trimDataForPooling(data);
+            
             if self.isUseGPU
                 self.device = gpuDevice;
                 data = gpuArray(data);
@@ -191,7 +193,7 @@ classdef crbm
                
                % For each epoch, all samples are computed
                for i = 1 : nBatch
-                   batchData = data(:,:,i,:);
+                   batchData = squeeze(data(:,:,i,:));
                    
                    [self, dW, dVisBias, dHidBias] = self.calcGradient(batchData);
                    self = self.applyGradient(dW, dVisBias, dHidBias);
@@ -207,7 +209,6 @@ classdef crbm
                
                if self.verbose & ~mod(epoch, self.displayInterval)
                    fprintf(1,'epoch %d, reconstruction error %f, current sparsity %f\n', epoch, err, mean(currentSparsity(:)));
-                   
                end
             end
             
@@ -220,6 +221,20 @@ classdef crbm
             if self.isSaveModel
                self.save; 
             end
+        end
+        
+        function data = trimDataForPooling(self, data)
+            if mod(size(data,1)-self.kernelSize(1)+1, self.poolingScale(1))~=0
+                n = mod(size(data,1)-self.kernelSize(1)+1, self.poolingScale(1));
+                data(1:floor(n/2), : ,:, :) = [];
+                data(end-ceil(n/2)+1:end, : ,:, :) = [];
+            end
+            if mod(size(data,2)-self.kernelSize(2)+1, self.poolingScale(2))~=0
+                n = mod(size(data,2)-self.kernelSize(2)+1, self.poolingScale(2));
+                data(:, 1:floor(n/2), :, :) = [];
+                data(:, end-ceil(n/2)+1:end, :, :) = [];
+            end
+            
         end
         
         function [self, dW, dVisBias, dHidBias] = calcGradient(self, data)
@@ -235,11 +250,11 @@ classdef crbm
            
            for i = 1 : self.nFeatureMapHid
               for j = 1 : self.nFeatureMapVis
-                  dW(:,:,j,i) = conv2(data(:,:,1,j), self.ff(self.initHidSample(:,:,i)), 'valid') - ...
+                  dW(:,:,j,i) = conv2(data(:,:,j), self.ff(self.initHidSample(:,:,i)), 'valid') - ...
                       conv2(self.visSample(:,:,j), self.ff(self.hidSample(:,:,i)), 'valid');
               end 
            end
-           
+
            dVisBias = squeeze(sum(sum(data - self.visSample, 1), 2));
            dHidBias = squeeze(sum(sum(self.initHidSample - self.hidSample, 1), 2));
            
@@ -279,7 +294,7 @@ classdef crbm
            
            for i = 1 : self.nFeatureMapHid
               for j = 1 : self.nFeatureMapVis
-                 self.hidInput(:,:,i) = self.hidInput(:,:,i) + conv2(data(:,:,1,j), self.ff(self.W(:,:,j,i)), 'valid'); 
+                 self.hidInput(:,:,i) = self.hidInput(:,:,i) + conv2(data(:,:,j), self.ff(self.W(:,:,j,i)), 'valid'); 
               end
                self.hidInput(:,:,i) =  self.hidInput(:,:,i) + self.hidBias(i);
            end
@@ -314,6 +329,8 @@ classdef crbm
             % -----------------------------------
             % calcualte the output of pooling layer
             % -----------------------------------
+            data = self.trimDataForPooling(data);
+            
             nCase = size(data, 3);
             xStride = self.poolingScale(1);
             yStride = self.poolingScale(2);
